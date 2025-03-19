@@ -1,15 +1,15 @@
 backend:
   name: git-gateway
-  branch: main
+  branch: main  # lub master, w zależności od nazwy Twojej głównej gałęzi
 
-media_folder: "images/uploads"
+media_folder: "images/uploads"  # Folder do przechowywania zdjęć
 
 collections:
   - name: "portfolio"
     label: "Portfolio"
-    folder: "content/portfolio"
-    create: true
-    slug: "{{slug}}"
+    folder: "content/portfolio"  # Folder, gdzie będą zapisane projekty
+    create: true           # Możliwość tworzenia nowych plików
+    slug: "{{slug}}"       # Tworzenie URL z tytułów
     fields:
       - { label: "Tytuł", name: "title", widget: "string" }
       - { label: "Opis", name: "description", widget: "text" }
