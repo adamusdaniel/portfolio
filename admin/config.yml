@@ -1,17 +1,17 @@
 backend:
   name: git-gateway
-  branch: main  # Główna gałąź repozytorium
+  branch: main
 
-media_folder: "images/uploads" # Folder na zdjęcia
+media_folder: "images/uploads"
 
 collections:
-  - name: "strona-glowna"
-    label: "Strona Główna"
-    files:
-      - name: "hero"
-        label: "Sekcja Hero"
-        file: "content/home.json"
-        fields:
-          - { label: "Nagłówek", name: "title", widget: "string" }
-          - { label: "Opis", name: "description", widget: "text" }
-          - { label: "Tło", name: "background", widget: "image" }
+  - name: "portfolio"
+    label: "Portfolio"
+    folder: "content/portfolio"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Tytuł", name: "title", widget: "string" }
+      - { label: "Opis", name: "description", widget: "text" }
+      - { label: "Obraz", name: "image", widget: "image" }
+      - { label: "Link do projektu", name: "url", widget: "string" }

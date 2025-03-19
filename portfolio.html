@@ -1,0 +1,21 @@
+<h1>Moje Portfolio</h1>
+<div id="portfolio-list"></div>
+
+<script>
+  fetch('content/portfolio.json')
+    .then(response => response.json())
+    .then(projects => {
+      let portfolioDiv = document.getElementById("portfolio-list");
+      projects.forEach(proj => {
+        let projectHTML = `
+          <div>
+            <h2><a href="portfolio/${proj.slug}.html">${proj.title}</a></h2>
+            <img src="${proj.image}" alt="${proj.title}">
+            <p>${proj.description}</p>
+          </div>
+        `;
+        portfolioDiv.innerHTML += projectHTML;
+      });
+    })
+    .catch(error => console.error("Błąd ładowania projektów:", error));
+</script>
