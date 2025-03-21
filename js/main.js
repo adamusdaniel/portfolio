@@ -682,8 +682,9 @@ function checkPassword() {
     let correctPassword = "adamusportfolio"; // Ustaw swoje hasło
 
     if (password === correctPassword) {
-        window.open("https://drive.google.com/file/d/1lFW5_wA0wuiwC0jt24zneKDA9212A8zU/view?usp=sharing", "_blank");
-    } else {
+        //window.open("https://drive.google.com/file/d/1lFW5_wA0wuiwC0jt24zneKDA9212A8zU/view?usp=sharing", "_blank");
+		window.open("https://www.adamusdaniel.com/portfolio_gallery", "_blank");
+	} else {
         alert("Incorrect password. Try again.");
     }
 }
