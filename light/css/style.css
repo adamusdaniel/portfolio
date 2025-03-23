@@ -2138,37 +2138,14 @@ span.error {
 }
 
 
-.cover-v1.blurred-bg {
-  position: relative;
-  overflow: hidden;
-}
-
-.cover-v1.blurred-bg::before {
-  content: "";
+.overlay-blur {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: inherit; /* Pobiera tło z cover-v1 */
-  background-size: cover;
-  background-position: center;
-  filter: blur(10px); /* Efekt rozmycia */
-  z-index: 0;
-}
-
-.cover-v1.blurred-bg .overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3); /* Ciemniejsza warstwa */
-  z-index: 1;
-}
-
-/* Utrzymuje treść na wierzchu */
-.cover-v1.blurred-bg > * {
-  position: relative;
-  z-index: 2;
+  background: rgba(0, 0, 0, 0.4); /* Przyciemnienie */
+  backdrop-filter: blur(8px); /* Rozmycie */
+  -webkit-backdrop-filter: blur(8px); /* Dla Safari */
+  pointer-events: none; /* Nie blokuje interakcji */
 }
