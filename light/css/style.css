@@ -2138,14 +2138,25 @@ span.error {
 }
 
 
-.overlay-blur {
+
+.cover-v1.overlay-blur {
+  position: relative;
+}
+
+.cover-v1.overlay-blur:before {
+  z-index: 9;
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.4); /* Przyciemnienie */
+  right: 0;
+  bottom: 0;
+  content: "";
+  background: rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(8px); /* Rozmycie */
   -webkit-backdrop-filter: blur(8px); /* Dla Safari */
   pointer-events: none; /* Nie blokuje interakcji */
+}
+
+.cover-v1.overlay-blur .mbYTP_wrapper {
+  z-index: -1;
 }
