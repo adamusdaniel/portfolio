@@ -759,13 +759,10 @@ a, a:hover {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  content: "";
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.15); /* Przyciemnienie */
   backdrop-filter: blur(8px); /* Rozmycie */
-  -webkit-backdrop-filter: blur(8px); /* Dla Safari */
-  pointer-events: none; /* Nie blokuje interakcji */
-  background: rgba(0, 0, 0, 0.15);
 }
 
 .cover-v1.overlay .mbYTP_wrapper {
