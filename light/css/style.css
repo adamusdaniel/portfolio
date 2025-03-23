@@ -2136,3 +2136,23 @@ span.error {
 .gsap-reveal-img .reveal-wrap .reveal-content .portfolio-item-content h3 {
   margin-bottom: 10px;
 }
+
+
+.blurred-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: inherit;
+  background-size: cover;
+  background-position: center;
+  filter: blur(10px); /* Stopień rozmycia */
+  z-index: 0;
+}
+
+.blurred-bg > * {
+  position: relative;
+  z-index: 1;
+}
