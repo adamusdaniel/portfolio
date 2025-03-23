@@ -762,6 +762,9 @@ a, a:hover {
   right: 0;
   bottom: 0;
   content: "";
+  backdrop-filter: blur(8px); /* Rozmycie */
+  -webkit-backdrop-filter: blur(8px); /* Dla Safari */
+  pointer-events: none; /* Nie blokuje interakcji */
   background: rgba(0, 0, 0, 0.15);
 }
 
