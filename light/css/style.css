@@ -759,10 +759,10 @@ a, a:hover {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.15); /* Przyciemnienie */
-  backdrop-filter: blur(8px); /* Rozmycie */
+  right: 0;
+  bottom: 0;
+  content: "";
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .cover-v1.overlay .mbYTP_wrapper {
@@ -2135,28 +2135,4 @@ span.error {
 
 .gsap-reveal-img .reveal-wrap .reveal-content .portfolio-item-content h3 {
   margin-bottom: 10px;
-}
-
-
-
-.cover-v1.overlay-blur {
-  position: relative;
-}
-
-.cover-v1.overlay-blur:before {
-  z-index: 9;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  content: "";
-  background: rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(8px); /* Rozmycie */
-  -webkit-backdrop-filter: blur(8px); /* Dla Safari */
-  pointer-events: none; /* Nie blokuje interakcji */
-}
-
-.cover-v1.overlay-blur .mbYTP_wrapper {
-  z-index: -1;
 }
