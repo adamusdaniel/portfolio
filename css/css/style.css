@@ -82,13 +82,13 @@ a {
     -webkit-box-shadow: none;
     box-shadow: none; }
   .btn.btn-outline-pill.btn-custom-light {
-    color: #fff;
+    color: #2F80ED;
     border: 2px solid rgba(255, 255, 255, 0.5);
     -webkit-transition: .3s all ease;
     -o-transition: .3s all ease;
     transition: .3s all ease; }
     .btn.btn-outline-pill.btn-custom-light:hover, .btn.btn-outline-pill.btn-custom-light:active, .btn.btn-outline-pill.btn-custom-light:focus {
-      border-color: #fff; }
+      border-color: #2F80ED ; }
   .btn.btn-bg-white--hover:hover {
     background-color: #fff;
     color: #000; }
