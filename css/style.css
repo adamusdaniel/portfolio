@@ -116,7 +116,7 @@ a, a:hover {
 }
 
 .btn.btn-outline-pill.btn-custom-light:hover, .btn.btn-outline-pill.btn-custom-light:active, .btn.btn-outline-pill.btn-custom-light:focus {
-  border-color: #fff;
+  border-color: #2F80ED;
 }
 
 .btn.btn-bg-white--hover:hover {
