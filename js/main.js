@@ -560,13 +560,14 @@ var contactForm = function() {
 
 				$.ajax({   	
 			      type: "POST",
-			      url: "php/send-email.php",
+			      url: "/",
 			      data: $(form).serialize(),
 
 			      beforeSend: function() { 
 			      	$submit.css('display', 'block').text(waitText);
 			      },
 			      success: function(msg) {
+	               msg = 'OK'; // Netlify Forms returns the page HTML on success
 	               if (msg == 'OK') {
 	               	$('#form-message-warning').hide();
 			            setTimeout(function(){
