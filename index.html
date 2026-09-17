@@ -15,9 +15,9 @@
 <meta name="twitter:image" content="https://adamusdaniel.com/images/thumbnail-v2.png">
 </head>
 <body style="margin:0">
+<script>try{if("scrollRestoration" in history)history.scrollRestoration="manual";if(!location.hash||location.hash==="#home"){window.scrollTo(0,0);document.addEventListener("DOMContentLoaded",function(){window.scrollTo(0,0)});}}catch(e){}</script>
 <title>Daniel Adamus v2</title>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;700;800&display=optional">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;700;800&display=swap">
 <style>
 :root{
   --bg-0:#4E4848; --bg-1:#3D3838; --bg-2:#2B2828;
@@ -226,6 +226,11 @@ p{margin:0}
 .who img{width:56px;height:56px;border-radius:50%;object-fit:cover;filter:grayscale(1)}
 .who strong{display:block;font-size:18px;font-weight:800}
 .who span{font-size:14px;color:var(--text-3)}
+
+.spin{display:inline-block;width:15px;height:15px;margin-right:9px;vertical-align:-2px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn[disabled]{opacity:.75;cursor:progress}
+.sent-err{color:#e8b4b4}
 
 /* ---------- logos ---------- */
 .logos{margin-top:64px;border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);padding-block:28px;overflow:hidden;position:relative;
@@ -958,7 +963,7 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
     if(location.hash===target){ route(); } else { location.hash=target; }
   });
   if('scrollRestoration' in history) history.scrollRestoration='manual';
-  window.addEventListener('load',function(){ var h=location.hash; if(!h||h==='#home'){ jumpTop(); setTimeout(jumpTop,250); } setTimeout(function(){ window.__booted=true; },400); });
+  window.addEventListener('load',function(){ var h=location.hash; if((!h||h==='#home') && (window.pageYOffset||document.documentElement.scrollTop)) jumpTop(); setTimeout(function(){ window.__booted=true; },400); });
   window.addEventListener('pageshow',function(e){ if(e.persisted) return; var h=location.hash; if(!h||h==='#home') jumpTop(); });
   window.addEventListener('hashchange',route);
   window.addEventListener('load',function(){ var h=location.hash; if(h==='#all-projects'||h==='#more-projects'||h.indexOf('#project/')===0||h.indexOf('#private/')===0){ setTimeout(function(){ window.scrollTo({top:0,behavior:'auto'}); },0); } });
@@ -1256,16 +1261,19 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
   form.addEventListener('submit',function(e){
     e.preventDefault();
     var ok=true;
-    form.querySelectorAll('input,textarea').forEach(function(i){ var v=i.value.trim(); var bad=!v||(i.type==='email'&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)); i.style.borderBottomColor=bad?'#e07a7a':''; if(bad) ok=false; });
+    form.querySelectorAll('input[required],textarea[required]').forEach(function(i){ var v=i.value.trim(); var bad=!v||(i.type==='email'&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)); i.style.borderBottomColor=bad?'#e07a7a':''; if(bad) ok=false; });
     if(!ok) return;
-    var btn=document.getElementById('f-send'); btn.querySelector('span').textContent='Sending…'; btn.disabled=true;
+    var btn=document.getElementById('f-send'); btn.innerHTML='<span class="spin" aria-hidden="true"></span><span>Sending…</span>'; btn.disabled=true;
     var data=new URLSearchParams(new FormData(form)).toString();
-    fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:data})
-      .then(function(r){ if(!r.ok) throw new Error(r.status);
-        form.innerHTML='<div class="sent">Your message was sent, thank you!</div>'; })
-      .catch(function(){ btn.querySelector('span').textContent='Send message'; btn.disabled=false;
-        var e=form.querySelector('.sent-err'); if(!e){ e=document.createElement('div'); e.className='sent sent-err'; form.appendChild(e); }
-        e.textContent='Sending failed. Please write to hello@adamusdaniel.com.'; });
+    var done=function(msg,err){ if(!err){ form.innerHTML='<div class="sent">Your message was sent, thank you!</div>'; return; }
+      btn.innerHTML='<span>Send message</span>'; btn.disabled=false;
+      var e=form.querySelector('.sent-err'); if(!e){ e=document.createElement('div'); e.className='sent sent-err'; form.appendChild(e); }
+      e.textContent=msg; };
+    fetch(location.pathname,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:data})
+      .then(function(r){ if(r.ok||r.status===0){ done(); return; }
+        return fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:data})
+          .then(function(r2){ if(r2.ok) done(); else done('Sending failed ('+r2.status+'). Please write to hello@adamusdaniel.com.',1); }); })
+      .catch(function(){ done('No connection. Please write to hello@adamusdaniel.com.',1); });
   });
   document.getElementById('yr').textContent=new Date().getFullYear();
   window.addEventListener('hashchange',function(){ setTimeout(function(){ window.dispatchEvent(new Event('resize')); },60); });
