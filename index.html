@@ -24,6 +24,9 @@
   --ease:cubic-bezier(.22,.61,.36,1);
 }
 *{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden}
+@supports (overflow:clip){html,body{overflow-x:clip}}
+.view{max-width:100vw}
 html{scroll-behavior:smooth}
 body{margin:0;font-family:var(--font);color:var(--text);background:var(--bg-2);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 80% 70% at 50% 50%,var(--bg-0) 0%,var(--bg-1) 50%,var(--bg-2) 100%)}
@@ -86,7 +89,8 @@ p{margin:0}
   .band .container{flex-direction:column;align-items:center;text-align:center;padding-top:calc(var(--circle) * .55)}
   .hero-text{max-width:none;padding-block:16px 40px}
   .shape{right:auto;left:50%;top:0;transform:translate(-50%,-45%)}
-  .shape .ph{-webkit-mask-image:radial-gradient(circle closest-side at 50% 50%,#000 calc(100% - .5px),transparent 100%);mask-image:radial-gradient(circle closest-side at 50% 50%,#000 calc(100% - .5px),transparent 100%);-webkit-mask-size:100% 100%;mask-size:100% 100%}
+  .shape .ph{-webkit-mask-image:radial-gradient(circle closest-side at 50% 50%,#000 calc(100% - .5px),transparent 100%),linear-gradient(#000,#000);mask-image:radial-gradient(circle closest-side at 50% 50%,#000 calc(100% - .5px),transparent 100%),linear-gradient(#000,#000);-webkit-mask-size:100% 100%,100% 55%;mask-size:100% 100%,100% 55%;-webkit-mask-position:0 0,0 100%;mask-position:0 0,0 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+  .shape img{left:14%;top:10%;width:72%}
 }
 /* entrance */
 @keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
@@ -97,7 +101,8 @@ p{margin:0}
 .hero-text p{opacity:0;transform:translateY(16px);transition:opacity .8s var(--ease),transform .8s var(--ease)}
 .hero-text.typed-done p{opacity:1;transform:none}
 .shape img{animation:bloom-img 1.1s var(--ease) .55s both}
-@keyframes bloom-img{from{opacity:0;transform:scale(.8);transform-origin:50% 70%}to{opacity:1;transform:none}}
+@keyframes bloom-img{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.shape img{transform-origin:50% 40%}
 
 /* ---------- sections ---------- */
 .section{padding-block:clamp(80px,10vw,160px)}
@@ -335,7 +340,7 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
 @media(max-width:900px){.case-meta{grid-template-columns:1fr}}
 @media(max-width:900px){.show{grid-template-columns:1fr}}
 /* next / prev */
-.case-more::before{content:"";position:absolute;z-index:-1;top:calc(-1 * var(--space-section) / 1.5);bottom:calc(-1 * (var(--space-section) + 96px));left:-50vw;right:-50vw;background:rgba(43,40,40,.82);border-top:1px solid rgba(255,255,255,.06)}
+.case-more::before{content:"";position:absolute;z-index:-1;top:calc(-1 * var(--space-section) / 1.5);bottom:calc(-1 * (var(--space-section) + 96px));left:0;right:0;background:rgba(43,40,40,.82);box-shadow:0 0 0 100vmax rgba(43,40,40,.82);clip-path:inset(0 -100vmax);border-top:1px solid rgba(255,255,255,.06)}
 .case-more{margin-top:calc(var(--space-section) * 1.6);display:flex;flex-direction:column;gap:var(--space-head);width:min(var(--content), 100vw - 2*var(--gutter));position:relative;left:50%;transform:translateX(-50%)}
 .case-nav{margin-top:96px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
 .case-nav a{display:flex;flex-direction:column;gap:8px;padding:24px;border-radius:24px;background:var(--tile);color:inherit;transition:background .3s,transform .4s var(--ease)}
@@ -530,7 +535,8 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
 .show .desc>p:first-child{color:var(--text)}
 
 /* running text */
-.case-body p,.case-body li,.show .desc p,.show .desc li,.quote blockquote,.x-quotes blockquote{font:var(--t-body)}
+.case-body p,.case-body li,.show .desc p,.show .desc li,.x-quotes blockquote{font:var(--t-body)}
+.quote blockquote{font:var(--t-lead)}
 .show .desc ul{gap:10px}
 .show .desc li{padding-left:22px}
 .show .desc li::before{top:.7em;width:8px;height:8px}
@@ -654,6 +660,9 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
   .split{gap:20px}
   .case-more{margin-top:56px}
   .case-more::before{top:-32px}
+  .case-more .grid{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin-inline:-16px;padding:2px 16px 8px;scroll-padding-inline:16px}
+  .case-more .grid::-webkit-scrollbar{display:none}
+  .case-more .grid .card{flex:0 0 82%;scroll-snap-align:start}
   .q-dots{display:flex}
   /* 4. filters on one scrollable line */
   .all-head .filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-16px;padding-inline:16px;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
@@ -818,7 +827,7 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
           <div class="field"><label for="f-name">Name</label><input id="f-name" name="name" type="text" required autocomplete="name" placeholder="Your name"></div>
           <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" required autocomplete="email" placeholder="you@example.com"></div>
           <div class="field full"><label for="f-msg">Message</label><textarea id="f-msg" name="message" required placeholder="Write your message…"></textarea></div>
-          <div class="actions"><button class="btn" type="submit" id="f-send"><span>Send message</span></button><span class="note" id="f-note">Prototype: the message isn't sent anywhere yet.</span></div>
+          <div class="actions"><button class="btn" type="submit" id="f-send"><span>Send message</span></button></div>
         </form>
         <div class="info">
           <div class="row"><span>Email</span><a href="mailto:hello@adamusdaniel.com">hello@adamusdaniel.com</a></div>
@@ -855,7 +864,6 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
             <div class="lock-row"><input id="lockPass" type="password" required autocomplete="current-password" placeholder="Enter password"><button class="btn" type="submit" id="lockBtn"><span>Unlock</span></button></div>
             <p class="lock-err" id="lockErr" role="alert"></p>
           </form>
-          <p class="note">No password? <a href="mailto:hello@adamusdaniel.com?subject=Access%20to%20confidential%20projects">Ask for access</a>.</p>
         </div>
       </div>
       <div id="moreOpen" hidden>
@@ -876,7 +884,7 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
 
 <footer>
   <div class="foot">
-    <div class="l"><span>adamusdaniel.com</span><span>|</span><span>© <span id="yr">2026</span> Daniel Adamus. All rights reserved.</span></div><span class="proto">Prototype · v2</span>
+    <div class="l"><span>adamusdaniel.com</span><span>|</span><span>© <span id="yr">2026</span> Daniel Adamus. All rights reserved.</span></div>
     </div>
   </div>
 </footer>
@@ -910,6 +918,7 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
     var target=a.getAttribute('href');
     if(location.hash===target){ route(); } else { location.hash=target; }
   });
+  if('scrollRestoration' in history) history.scrollRestoration='manual';
   window.addEventListener('hashchange',route);
   window.addEventListener('load',function(){ var h=location.hash; if(h==='#all-projects'||h==='#more-projects'||h.indexOf('#project/')===0||h.indexOf('#private/')===0){ setTimeout(function(){ window.scrollTo({top:0,behavior:'instant'}); },0); } });
 
@@ -947,7 +956,7 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
       '<div class="card-img"><img src="'+im(p.thumb)+'" alt="'+esc(p.title)+'" loading="lazy"></div>'+
       '<div class="tags">'+p.tags.slice(0,3).map(function(x){return '<span class="tag">'+esc(x)+'</span>'}).join('')+'</div>'+
       '<div class="card-text"><h3>'+esc(p.title)+'</h3><p>'+esc(p.desc)+'</p></div>'+
-      '<svg class="outline" aria-hidden="true"><rect width="100%" height="100%" rx="24"/></svg>'+
+      '<svg class="outline" aria-hidden="true"><rect x="0.5" y="0.5" width="0" height="0" rx="'+(innerWidth<=640?17.5:23.5)+'"/></svg>'+
       '<span class="arrow" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></span></a>';
   }
   function projectGrid(list){ return list.map(projectCard).join(''); }
@@ -963,6 +972,10 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
   var RO=window.ResizeObserver? new ResizeObserver(function(es){ es.forEach(function(e){ sizeOutline(e.target); }); }) : null;
   function watchOutlines(root){ (root||document).querySelectorAll('.card').forEach(function(c){ sizeOutline(c); if(RO) RO.observe(c); }); }
   window.addEventListener('resize',function(){ watchOutlines(); });
+  window.addEventListener('load',function(){ watchOutlines(); });
+  window.addEventListener('pageshow',function(){ watchOutlines(); });
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ watchOutlines(); });
+  window.addEventListener('hashchange',function(){ requestAnimationFrame(function(){ watchOutlines(); }); setTimeout(watchOutlines,400); });
   document.getElementById('featured').innerHTML=projectGrid(ORDER.slice(0,3));
   document.getElementById('all-grid').innerHTML=projectGrid(ORDER);
   watchOutlines();
@@ -1205,7 +1218,7 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
     if(!ok) return;
     var btn=document.getElementById('f-send'); btn.querySelector('span').textContent='Sending…'; btn.disabled=true;
     setTimeout(function(){
-      form.innerHTML='<div class="sent">Your message was sent, thank you! <span class="note" style="display:block;margin-top:8px">(Prototype: in the real site this goes through Netlify Forms.)</span></div>';
+      form.innerHTML='<div class="sent">Your message was sent, thank you!</div>';
     },900);
   });
   document.getElementById('yr').textContent=new Date().getFullYear();
