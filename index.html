@@ -24,9 +24,9 @@
   --ease:cubic-bezier(.22,.61,.36,1);
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%;overflow-x:hidden}
-@supports (overflow:clip){html,body{overflow-x:clip}}
-.view{max-width:100vw}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.wrap{overflow-x:hidden}
+@supports (overflow:clip){.wrap{overflow-x:clip}}
 html{scroll-behavior:smooth}
 body{margin:0;font-family:var(--font);color:var(--text);background:var(--bg-2);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse 80% 70% at 50% 50%,var(--bg-0) 0%,var(--bg-1) 50%,var(--bg-2) 100%)}
@@ -117,7 +117,7 @@ p{margin:0}
 @media(max-width:640px){.grid{grid-template-columns:1fr}}
 .card{border:0;border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:16px;
   background-color:transparent;transition:background-color .35s var(--ease),transform .5s var(--ease),box-shadow .5s var(--ease);
-  position:relative;overflow:hidden;color:inherit}
+  position:relative;overflow:visible;color:inherit}
 .card:hover,.card:focus-visible{background-color:var(--card-hover);transform:translateY(-6px);box-shadow:0 30px 60px -30px rgba(0,0,0,.6)}
 .card-img{border-radius:16px;background:var(--tile);aspect-ratio:400/230;overflow:hidden;position:relative}
 .card-img img{width:100%;height:100%;object-fit:cover;transition:transform .7s var(--ease),filter .7s var(--ease)}
@@ -130,9 +130,10 @@ p{margin:0}
 .card p{font-size:clamp(16px,1.4vw,20px);color:var(--text-2);line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .card-text{display:flex;flex-direction:column;gap:8px}
 .card .outline{position:absolute;left:0;top:0;pointer-events:none;overflow:hidden;border-radius:24px}
-.card .outline rect{fill:none;stroke:var(--line);stroke-width:1;stroke-dasharray:12 8;transition:stroke .35s;shape-rendering:geometricPrecision}
+.card .outline rect,.card .outline path{fill:none;stroke:var(--line);stroke-width:1;transition:stroke .35s}
+
 .card .outline{overflow:visible}
-.card:hover .outline rect{stroke:var(--line-hover)}
+.card:hover .outline rect,.card:hover .outline path{stroke:var(--line-hover)}
 .card .arrow{position:absolute;top:32px;right:32px;width:40px;height:40px;border-radius:50%;background:var(--band);color:var(--ink-on-band);display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.35),0 0 0 1px rgba(0,0,0,.06);
   opacity:0;transform:translate(-8px,8px);transition:opacity .35s var(--ease),transform .45s var(--ease)}
 .card:hover .arrow{opacity:1;transform:none}
@@ -964,10 +965,11 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
   function sizeOutline(card){
     var svg=card.querySelector('.outline'); if(!svg) return;
     var w=card.clientWidth, h=card.clientHeight; if(!w||!h) return;
-    var r=parseFloat(getComputedStyle(card).borderTopLeftRadius)||24, rect=svg.firstChild;
+    var r=Math.max(0,(parseFloat(getComputedStyle(card).borderTopLeftRadius)||24)-.5), iw=w-1, ih=h-1;
+    /* one closed rounded rect; dash gap tuned so the pattern closes seamlessly and looks identical on straights and curves */
+    var P=2*(iw-2*r)+2*(ih-2*r)+2*Math.PI*r, n=Math.max(4,Math.round(P/20)), g=P/n-12;
     svg.setAttribute('viewBox','0 0 '+w+' '+h); svg.setAttribute('width',w); svg.setAttribute('height',h);
-    rect.setAttribute('x',.5); rect.setAttribute('y',.5); rect.setAttribute('width',w-1); rect.setAttribute('height',h-1);
-    rect.setAttribute('rx',Math.max(0,r-.5)); rect.setAttribute('ry',Math.max(0,r-.5));
+    svg.innerHTML='<rect x=".5" y=".5" width="'+iw+'" height="'+ih+'" rx="'+r+'" ry="'+r+'" stroke-dasharray="12 '+g.toFixed(3)+'" stroke-dashoffset="6"/>';
   }
   var RO=window.ResizeObserver? new ResizeObserver(function(es){ es.forEach(function(e){ sizeOutline(e.target); }); }) : null;
   function watchOutlines(root){ (root||document).querySelectorAll('.card').forEach(function(c){ sizeOutline(c); if(RO) RO.observe(c); }); }
