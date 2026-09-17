@@ -1273,16 +1273,20 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
     form.querySelectorAll('input[required],textarea[required]').forEach(function(i){ var v=i.value.trim(); var bad=!v||(i.type==='email'&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)); i.style.borderBottomColor=bad?'#e07a7a':''; if(bad) ok=false; });
     if(!ok) return;
     var btn=document.getElementById('f-send'); btn.innerHTML='<span class="spin" aria-hidden="true"></span><span>Sending…</span>'; btn.disabled=true;
+    var old=form.querySelector('.sent-err'); if(old) old.remove();
     var data=new URLSearchParams(new FormData(form)).toString();
-    var done=function(msg,err){ if(!err){ form.innerHTML='<div class="sent">Your message was sent, thank you!</div>'; return; }
-      btn.innerHTML='<span>Send message</span>'; btn.disabled=false;
-      var e=form.querySelector('.sent-err'); if(!e){ e=document.createElement('div'); e.className='sent sent-err'; form.appendChild(e); }
-      e.textContent=msg; };
-    fetch(location.pathname,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:data})
-      .then(function(r){ if(r.ok||r.status===0){ done(); return; }
-        return fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:data})
-          .then(function(r2){ if(r2.ok) done(); else done('Sending failed ('+r2.status+'). Please write to hello@adamusdaniel.com.',1); }); })
-      .catch(function(){ done('No connection. Please write to hello@adamusdaniel.com.',1); });
+    var t0=Date.now();
+    var after=function(fn){ var wait=Math.max(0,2000-(Date.now()-t0)); setTimeout(fn,wait); };
+    var ok=function(){ after(function(){ form.innerHTML='<div class="sent">Your message was sent, thank you!</div>'; }); };
+    var fail=function(code){ after(function(){
+        btn.innerHTML='<span>Send message</span>'; btn.disabled=false;
+        var e=document.createElement('div'); e.className='sent sent-err';
+        e.textContent='Something went wrong'+(code?' ('+code+')':'')+'. Please try again or write to hello@adamusdaniel.com.';
+        form.appendChild(e); }); };
+    var post=function(url){ return fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:data}); };
+    post('/').then(function(r){ if(r.ok){ ok(); return; }
+        return post(location.pathname).then(function(r2){ if(r2.ok) ok(); else fail(r2.status); }); })
+      .catch(function(){ fail('no connection'); });
   });
   document.getElementById('yr').textContent=new Date().getFullYear();
   window.addEventListener('hashchange',function(){ setTimeout(function(){ window.dispatchEvent(new Event('resize')); },60); });
