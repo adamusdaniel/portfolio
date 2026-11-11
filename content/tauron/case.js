@@ -281,11 +281,8 @@ window.TAURON_PROJECT={
         "v": "<strong>Two primary pilot KPIs:</strong>"
       },
       {
-        "t": "ol",
-        "v": [
-          "Reduce the share of enquiries submitted through the general form (baseline: 40% during the analysed period).",
-          "Increase the use of dedicated forms and self-service processes."
-        ]
+        "t": "html",
+        "v": "<ol class=\"x-steps\"><li>Reduce the share of enquiries submitted through the general form (baseline: 40% during the analysed period).</li><li>Increase the use of dedicated forms and self-service processes.</li></ol>"
       },
       {
         "t": "p",
