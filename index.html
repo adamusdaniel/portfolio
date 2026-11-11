@@ -750,6 +750,16 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
 .text-case .long-body>.label,
 .text-case .long-body>.intro,
 .text-case .long-body>blockquote{width:100%;max-width:720px;margin-inline:auto}
+
+/* Case-study reading hierarchy, independent of homepage section titles. */
+#caseRoot{--t-body:400 17px/1.6 var(--font)}
+#caseRoot .case-title{font-size:clamp(32px,3.612vw,52px);line-height:1.15}
+#caseRoot .intro-lead p{font:400 clamp(18px,1.528vw,22px)/1.5 var(--font)}
+@media(max-width:640px){
+  #caseRoot{--t-body:400 16px/1.6 var(--font)}
+  #caseRoot .case-title{font-size:32px;line-height:1.2}
+  #caseRoot .intro-lead p{font-size:18px}
+}
 </style>
 
 <div class="bg" aria-hidden="true"></div><div class="dust" aria-hidden="true"></div><div class="wrap">
