@@ -766,6 +766,13 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
 .text-case .long-body>figure.case-figure.is-wide{max-width:960px}
 .text-case .long-body>figure.case-figure.is-mobile{max-width:380px}
 .text-case .long-body>figure.case-figure img{height:auto;object-fit:contain}
+
+/* Trial layout: all lower case-study content shares the 720px reading column. */
+#caseRoot .long-body,
+#caseRoot>.roles,
+#caseRoot>.split-track,
+#caseRoot>.case-more{width:100%;max-width:720px;margin-inline:auto}
+#caseRoot .long-body>figure.case-figure.is-wide{max-width:720px}
 </style>
 
 <div class="bg" aria-hidden="true"></div><div class="dust" aria-hidden="true"></div><div class="wrap">
