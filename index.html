@@ -736,6 +736,19 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
 .tauron-paths{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .tauron-case figure:focus-visible{outline:2px solid var(--band);outline-offset:6px;border-radius:16px}
 @media(max-width:640px){.tauron-stats,.tauron-paths{grid-template-columns:1fr}.tauron-case .tauron-mobile{max-width:100%}.tauron-case .long-body{grid-template-columns:1fr}}
+
+/* Center reading columns; keep text left aligned and visual modules wide. */
+.text-case .case-head{max-width:720px;margin-inline:auto;text-align:left}
+.text-case .long-body{max-width:none;width:100%;text-align:left}
+.text-case .long-body>p,
+.text-case .long-body>h3,
+.text-case .long-body>h4,
+.text-case .long-body>h5,
+.text-case .long-body>ul,
+.text-case .long-body>ol,
+.text-case .long-body>.label,
+.text-case .long-body>.intro,
+.text-case .long-body>blockquote{width:100%;max-width:720px;margin-inline:auto}
 </style>
 
 <div class="bg" aria-hidden="true"></div><div class="dust" aria-hidden="true"></div><div class="wrap">
@@ -1088,6 +1101,7 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
   function renderCase(slug){
     var c=CASES[slug], root=document.getElementById('caseRoot');
     root.classList.toggle('tauron-case',slug==='tauron-search');
+    root.classList.toggle('text-case',!!c && c.type==='long');
     if(!c){ root.innerHTML='<p>Project not found.</p>'; return; }
     var i=Math.max(0,ORDER.map(function(o){return o.slug}).indexOf(slug));
     var prev=ORDER[(i-1+ORDER.length)%ORDER.length], next=ORDER[(i+1)%ORDER.length];
