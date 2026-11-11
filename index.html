@@ -760,6 +760,12 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
   #caseRoot .case-title{font-size:32px;line-height:1.2}
   #caseRoot .intro-lead p{font-size:18px}
 }
+
+/* Match individual illustrations to the reading column; preserve comparison boards. */
+.text-case .long-body>figure.case-figure{width:100%;max-width:720px;margin-inline:auto;justify-self:center}
+.text-case .long-body>figure.case-figure.is-wide{max-width:960px}
+.text-case .long-body>figure.case-figure.is-mobile{max-width:380px}
+.text-case .long-body>figure.case-figure img{height:auto;object-fit:contain}
 </style>
 
 <div class="bg" aria-hidden="true"></div><div class="dust" aria-hidden="true"></div><div class="wrap">
@@ -1035,6 +1041,7 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
     if(inIntro) html+='</div>';
     return html;
   }
+  var WIDE_CASE_IMAGES=new Set(["content/buchfix/image_5.webp", "content/buchfix/image_2.webp", "content/buchfix/image_1.webp", "content/buchfix/image_3.webp", "content/buchfix/image_6.webp", "content/buchfix/image_7.webp", "content/buchfix/image_4.webp", "content/loyalty/image_1.webp", "content/loyalty/image_3.webp", "content/loyalty/image_4.webp", "content/loyalty/image_5.webp", "content/loyalty/image_6.webp", "content/loyalty/image_7.webp", "content/newsletter/image_1.webp", "content/newsletter/image_2.webp", "content/newsletter/image_7.webp", "content/newsletter/image_8.webp", "content/niewidomi/image_3.webp", "content/niewidomi/image_4.webp", "content/ticketly/image_4.webp", "content/ticketly/image_5.webp", "content/ticketly/image_6.webp", "content/ticketly/image_7.webp", "content/traininfo/image_4.webp", "content/traininfo/image_6.webp", "content/traininfo/image_7.webp"]);
   function block(b){
     return (function(){
       if(b.t==='h') return b.lvl<=3 ? '<h3>'+b.v+'</h3>' : '<h4>'+b.v+'</h4>';
@@ -1043,7 +1050,7 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
       if(b.t==='ul') return '<ul>'+b.v.map(function(i){return '<li>'+i+'</li>'}).join('')+'</ul>';
       if(b.t==='ol') return '<ol>'+b.v.map(function(i){return '<li>'+i+'</li>'}).join('')+'</ol>';
       if(b.t==='html') return '<div class="x">'+b.v+'</div>';
-      if(b.t==='img') return '<figure'+(b.mobile?' class="tauron-mobile"':'')+'><img src="'+im(b.v)+'" alt="'+esc(b.alt||'')+'"'+(b.width?' width="'+b.width+'" height="'+b.height+'"':'')+' loading="lazy">'+(b.caption?'<figcaption>'+esc(b.caption)+'</figcaption>':'')+'</figure>';
+      if(b.t==='img') return '<figure class="case-figure'+(b.mobile?' tauron-mobile is-mobile':(b.layout==='wide'||WIDE_CASE_IMAGES.has(b.v)?' is-wide':''))+'"><img src="'+im(b.v)+'" alt="'+esc(b.alt||'')+'"'+(b.width?' width="'+b.width+'" height="'+b.height+'"':'')+' loading="lazy">'+(b.caption?'<figcaption>'+esc(b.caption)+'</figcaption>':'')+'</figure>';
       return '';
     })();
   }
