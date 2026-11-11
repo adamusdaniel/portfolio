@@ -2,8 +2,8 @@ window.TAURON_PROJECT={
   "case": {
     "slug": "tauron-search",
     "type": "long",
-    "title": "Don't look for the right form. Just describe your problem.",
-    "subtitle": "TAURON Search · Customer self-service · Web & mobile",
+    "title": "TAURON — from a customer’s words to the right service",
+    "subtitle": "",
     "hero": "content/tauron/cover.webp",
     "details": [
       [
@@ -12,19 +12,15 @@ window.TAURON_PROJECT={
       ],
       [
         "Role",
-        "Product Designer · UX/UI concept, desktop & mobile, Figma Make prototype"
+        "Product Designer"
       ],
       [
-        "Collaboration",
-        "Business stakeholders, analytics, user researchers and delivery teams"
+        "Client",
+        "TAURON"
       ],
       [
-        "Scope",
-        "Problem analysis, interaction design, prototyping, research collaboration, iterations and handoff"
-      ],
-      [
-        "Status",
-        "Designs handed over for a pilot (PoC). No production performance results yet."
+        "Visit",
+        "<a href=\"https://www.tauron.pl/\" target=\"_blank\" rel=\"noopener noreferrer\">tauron.pl</a>"
       ]
     ],
     "blocks": [
@@ -298,27 +294,6 @@ window.TAURON_PROJECT={
       {
         "t": "p",
         "v": "If the pilot demonstrates value, the next step may be to bring the experience to TAURON&#x27;s main customer-support page. We are not claiming production performance improvements or achieved cost savings at this stage."
-      },
-      {
-        "t": "h",
-        "lvl": 3,
-        "v": "What this project taught me"
-      },
-      {
-        "t": "p",
-        "v": "This project is a reminder not to stop at the first proposed solution. The business identified a real operational problem, but another dropdown alone might not have addressed its cause."
-      },
-      {
-        "t": "p",
-        "v": "The turning point was noticing what customers were already doing: describing their issues in their own words in the general contact form. <strong>We didn&#x27;t invent a new behaviour. We brought it forward in the journey so the system could recommend a suitable path before the enquiry reached a person.</strong>"
-      },
-      {
-        "t": "p",
-        "v": "Combining that observation with analytics, prototyping and comparative user research helped us design a simpler entry point to existing processes. At this stage, we didn&#x27;t need AI to test the value of the concept."
-      },
-      {
-        "t": "p",
-        "v": "<strong>Good self-service doesn&#x27;t require customers to understand how a company is organised. It lets them start with their own problem.</strong>"
       }
     ]
   },
