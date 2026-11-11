@@ -294,6 +294,23 @@ window.TAURON_PROJECT={
       {
         "t": "p",
         "v": "If the pilot demonstrates value, the next step may be to bring the experience to TAURON&#x27;s main customer-support page. We are not claiming production performance improvements or achieved cost savings at this stage."
+      },
+      {
+        "t": "h",
+        "lvl": 3,
+        "v": "Summary"
+      },
+      {
+        "t": "p",
+        "v": "TAURON Search was initiated to reduce the number of customer requests requiring manual handling. By analyzing data and customer behavior, we identified an opportunity to introduce a natural-language search experience instead of adding more categories to the existing contact form."
+      },
+      {
+        "t": "p",
+        "v": "Usability testing with six participants confirmed that the new approach made it easier to find the right self-service solution. The project is currently being implemented, with its effectiveness to be measured through fewer general enquiries and increased use of dedicated forms."
+      },
+      {
+        "t": "p",
+        "v": "This project demonstrates how combining analytics, UX research, and a simple technical solution can improve the customer experience while potentially reducing operational costs."
       }
     ]
   },
