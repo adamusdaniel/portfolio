@@ -36,7 +36,15 @@ def build_data(source):
             raise ValueError('Every card needs title, desc and thumb.')
         if not isinstance(card.get('tags'), list) or not all(isinstance(t, str) for t in card['tags']):
             raise ValueError('Card tags must be a list of strings.')
-    public = json.JSONDecoder().raw_decode(re.search(r'var CASES\s*=\s*(.*)', (ROOT/'index.html').read_text()).group(1))[0]
+    project_file = ROOT/'content'/'projects.js'
+    if project_file.exists():
+        public = json.loads(project_file.read_text().split('=', 1)[1].rstrip(';\n'))['cases']
+        tauron = ROOT/'content'/'tauron'/'case.js'
+        if tauron.exists():
+            project = json.loads(tauron.read_text().split('=', 1)[1].rstrip(';\n'))['case']
+            public[project['slug']] = project
+    else:
+        public = json.JSONDecoder().raw_decode(re.search(r'var CASES\s*=\s*(.*)', (ROOT/'index.html').read_text()).group(1))[0]
     if set(public) & set(data['cases']):
         raise ValueError('Private project slugs must differ from public project slugs.')
     refs = set()
@@ -92,7 +100,8 @@ def main():
     if len(password) < 12: parser.error('Use at least 12 characters; save the password in your password manager.')
     if password != getpass.getpass('Repeat password: '): parser.error('Passwords do not match.')
     result = subprocess.run(['node', '-e', CRYPTO], input=json.dumps({'password': password, 'data': data}), text=True, capture_output=True, check=True)
-    page = ROOT/'index.html'
+    page = ROOT/'js'/'portfolio-v2.js'
+    if not page.exists(): page = ROOT/'index.html'
     html = page.read_text()
     match = re.search(r'var VAULT_DATA\s*=\s*(null|\{[^\n]+\});', html)
     if not match: raise ValueError('Encrypted section not found; no files changed.')

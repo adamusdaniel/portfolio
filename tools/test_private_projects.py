@@ -60,6 +60,20 @@ class PrivateProjectsTests(unittest.TestCase):
         self.write_source()
         with self.assertRaises(ValueError): builder.build_data(self.source)
 
+    def test_build_uses_extracted_project_data_and_app(self):
+        (self.site/'index.html').write_text('<script src="js/portfolio-v2.js"></script>')
+        (self.site/'content').mkdir()
+        (self.site/'content/projects.js').write_text('window.PORTFOLIO_PROJECTS={"cases":{}};')
+        (self.site/'js').mkdir()
+        app = self.site/'js/portfolio-v2.js'
+        app.write_text('var VAULT_DATA=null;')
+        self.write_source()
+        with patch('sys.argv', ['builder', 'build', str(self.source)]), patch.object(builder.getpass, 'getpass', return_value='temporary-test-password'):
+            builder.main()
+        self.assertNotIn('VAULT_DATA', (self.site/'index.html').read_text())
+        self.assertNotIn('VAULT_DATA=null', app.read_text())
+        self.assertNotIn('Private fixture', app.read_text())
+
     def test_build_preserves_backup_without_exposing_plaintext(self):
         self.write_source()
         with patch('sys.argv', ['builder', 'build', str(self.source)]), patch.object(builder.getpass, 'getpass', return_value='temporary-test-password'):

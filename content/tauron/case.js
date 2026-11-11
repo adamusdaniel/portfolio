@@ -7,10 +7,6 @@ window.TAURON_PROJECT={
     "hero": "content/tauron/cover.webp",
     "details": [
       [
-        "Keywords",
-        "Product design, UX/UI, Web, Mobile"
-      ],
-      [
         "Role",
         "Product Designer"
       ],
@@ -19,7 +15,7 @@ window.TAURON_PROJECT={
         "Energy & Utilities"
       ],
       [
-        "Visit",
+        "Company website",
         "<a href=\"https://www.tauron.pl/\" target=\"_blank\" rel=\"noopener noreferrer\">www.tauron.pl</a>"
       ]
     ],
@@ -309,6 +305,11 @@ window.TAURON_PROJECT={
         "t": "p",
         "v": "This project demonstrates how combining analytics, UX research, and a simple technical solution can improve the customer experience while potentially reducing operational costs."
       }
+    ],
+    "tags": [
+      "Product design",
+      "Web",
+      "Mobile app"
     ]
   },
   "card": {
@@ -317,7 +318,7 @@ window.TAURON_PROJECT={
     "tags": [
       "Product design",
       "Web",
-      "UI"
+      "Mobile app"
     ],
     "desc": "Turning a request for another dropdown into a simpler route to self-service. Research-informed web and mobile pilot.",
     "thumb": "content/tauron/cover.webp"

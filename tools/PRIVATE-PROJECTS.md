@@ -41,7 +41,7 @@ Wypełnij powstały plik według wzoru poniżej. To przykład struktury, nie got
 }
 ```
 
-Obraz umieść pod `/workspace/portfolio-private/images/cover.webp`. Wszystkie prywatne obrazy muszą być wewnątrz folderu źródeł; zostaną zaszyfrowane razem z tekstem. Nie kopiuj ich do publicznego `content/`. Filtry rozpoznają tagi `Mobile app`, `Web`, `UI`, `Product design`. Teksty mogą zawierać HTML — używaj wyłącznie własnej, zaufanej treści.
+Obraz umieść pod `/workspace/portfolio-private/images/cover.webp`. Wszystkie prywatne obrazy muszą być wewnątrz folderu źródeł; zostaną zaszyfrowane razem z tekstem. Nie kopiuj ich do publicznego `content/`. Filtry rozpoznają tagi `Mobile app`, `Web`, `UI design`, `Product design`, `Design strategy`, `Design systems`, `Email`, `Accessibility`. Teksty mogą zawierać HTML — używaj wyłącznie własnej, zaufanej treści.
 
 ## Nowe hasło i publikacja
 
@@ -49,7 +49,7 @@ Obraz umieść pod `/workspace/portfolio-private/images/cover.webp`. Wszystkie p
 python3 tools/private-projects.py build /workspace/portfolio-private/projects.json
 ```
 
-Narzędzie pyta dwukrotnie o nowe hasło (minimum 12 znaków, bez wyświetlania). Zmienia wyłącznie zaszyfrowany pakiet w `index.html`, zachowując poprzedni pakiet w kopii. Pusta lista projektów nie zastąpi starej sekcji. Nie wykonuje commita, push ani publikacji.
+Narzędzie pyta dwukrotnie o nowe hasło (minimum 12 znaków, bez wyświetlania). Zmienia wyłącznie zaszyfrowany pakiet w `js/portfolio-v2.js`, zachowując poprzedni pakiet w kopii. Pusta lista projektów nie zastąpi starej sekcji. Nie wykonuje commita, push ani publikacji.
 
 Uruchom stronę przez `python3 -m http.server 8000 --bind 127.0.0.1` i sprawdź:
 
