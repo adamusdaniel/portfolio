@@ -15,12 +15,12 @@ window.TAURON_PROJECT={
         "Product Designer"
       ],
       [
-        "Client",
-        "TAURON"
+        "Industry",
+        "Energy & Utilities"
       ],
       [
         "Visit",
-        "<a href=\"https://www.tauron.pl/\" target=\"_blank\" rel=\"noopener noreferrer\">tauron.pl</a>"
+        "<a href=\"https://www.tauron.pl/\" target=\"_blank\" rel=\"noopener noreferrer\">www.tauron.pl</a>"
       ]
     ],
     "blocks": [
