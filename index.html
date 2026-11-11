@@ -738,7 +738,8 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
 @media(max-width:640px){.tauron-stats,.tauron-paths{grid-template-columns:1fr}.tauron-case .tauron-mobile{max-width:100%}.tauron-case .long-body{grid-template-columns:1fr}}
 
 /* Center reading columns; keep text left aligned and visual modules wide. */
-.text-case .case-head{max-width:720px;margin-inline:auto;text-align:left}
+.text-case .case-head{width:100%;max-width:none;text-align:left}
+.text-case .intro-lead>p{max-width:none}
 .text-case .long-body{max-width:none;width:100%;text-align:left}
 .text-case .long-body>p,
 .text-case .long-body>h3,
