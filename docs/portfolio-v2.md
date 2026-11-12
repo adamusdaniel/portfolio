@@ -1,6 +1,6 @@
 # Portfolio v2 — organisation and editing
 
-Develop and publish changes on `v2`. Do not update `main` without the owner's explicit approval. Keep private plaintext and passwords outside the repository and the web-server root. Access-management work is deferred; do not introduce a paid service without approval.
+Develop and publish changes on `v2`. Do not update `main` without the owner's explicit approval. Keep private plaintext and passwords outside the repository and the web-server root. Access management uses Netlify Functions and Blobs; see [private-access.md](private-access.md). Do not introduce a paid service without approval.
 
 ## Files
 
@@ -10,9 +10,9 @@ Develop and publish changes on `v2`. Do not update `main` without the owner's ex
 - `content/projects.js`: editable public cases, cards, image references and image metadata. Card titles and tags come from the matching case, so edit them in one place.
 - `content/tauron/case.js`: the public English TAURON case. Its content remains separate for a future move to private access. Moving it later cannot remove copies already downloaded or stored in Git history.
 - `content/media/`: extracted public images whose bytes differ from the original asset files. Other image references reuse matching files already present in the repository. Keep image contents unchanged when relocating them.
-- `tools/private-projects.py`: private-source encryption helper. See `tools/PRIVATE-PROJECTS.md` for its separate workflow.
+- `tools/prepare-private.py`: prepares an external private upload bundle. The previous browser-encryption publication command is retired; see `docs/private-access.md`.
 
-There is no build step for the site. Start `python3 -m http.server 8000 --bind 127.0.0.1` from the repository root. Netlify publishes the selected branch; the Python server does not implement Netlify Forms.
+Run `npm ci` and `npm run build`; Netlify publishes only `dist/`. For public-only local preview use `python3 -m http.server 8000 --bind 127.0.0.1 --directory dist`. The Python server does not implement Functions or Netlify Forms. See [private-access.md](private-access.md) for private-access tests and activation.
 
 ## Shared components and data
 

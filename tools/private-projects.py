@@ -1,22 +1,12 @@
 #!/usr/bin/env python3
-"""Build the encrypted More projects section. Plaintext stays outside the website."""
+"""Validate private sources; browser-encryption publication is retired."""
 import argparse
-import getpass
 import json
 import re
-import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CRYPTO = """
-const fs=require('node:fs'), c=require('node:crypto');
-const x=JSON.parse(fs.readFileSync(0,'utf8'));
-const salt=c.randomBytes(16), iv=c.randomBytes(12), iter=600000;
-const key=c.pbkdf2Sync(x.password,salt,iter,32,'sha256');
-const cipher=c.createCipheriv('aes-256-gcm',key,iv);
-const ct=Buffer.concat([cipher.update(JSON.stringify(x.data),'utf8'),cipher.final(),cipher.getAuthTag()]);
-process.stdout.write(JSON.stringify({v:1,iter,salt:salt.toString('base64'),iv:iv.toString('base64'),ct:ct.toString('base64')}));
-"""
+
 
 
 def build_data(source):
@@ -95,26 +85,10 @@ def main():
         source.chmod(0o600)
         print('Created an empty private source. Add projects using tools/PRIVATE-PROJECTS.md.')
         return
-    data = build_data(source)
-    password = getpass.getpass('New section password (at least 12 characters): ')
-    if len(password) < 12: parser.error('Use at least 12 characters; save the password in your password manager.')
-    if password != getpass.getpass('Repeat password: '): parser.error('Passwords do not match.')
-    result = subprocess.run(['node', '-e', CRYPTO], input=json.dumps({'password': password, 'data': data}), text=True, capture_output=True, check=True)
-    page = ROOT/'js'/'portfolio-v2.js'
-    if not page.exists(): page = ROOT/'index.html'
-    html = page.read_text()
-    match = re.search(r'var VAULT_DATA\s*=\s*(null|\{[^\n]+\});', html)
-    if not match: raise ValueError('Encrypted section not found; no files changed.')
-    import hashlib
-    backup = ROOT/'tools'/'vault-backups'/(hashlib.sha256(match[1].encode()).hexdigest()+'.json')
-    backup.parent.mkdir(parents=True, exist_ok=True)
-    if not backup.exists(): backup.write_text(match[1]+'\n')
-    page.write_text(html[:match.start(1)]+result.stdout+html[match.end(1):])
-    print('Encrypted section updated. Previous encrypted bundle preserved in tools/vault-backups/.')
-    print('Plaintext and password were not written into the website. Test locally before publishing v2.')
+    parser.error('Client-side password publication is retired. Use tools/prepare-private.py and the owner panel; see docs/private-access.md.')
 
 
 if __name__ == '__main__':
     try: main()
-    except (ValueError, OSError, subprocess.SubprocessError) as error:
+    except (ValueError, OSError) as error:
         raise SystemExit(str(error))

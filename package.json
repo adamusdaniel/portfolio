@@ -1,0 +1,19 @@
+{
+  "name": "portfolio-v2",
+  "private": true,
+  "scripts": {
+    "build": "node tools/build-site.mjs",
+    "test": "node --test tools/access.test.mjs",
+    "test:browser": "node tools/test-portfolio-browser.cjs",
+    "test:access:browser": "node tools/test-access-browser.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^10.0.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

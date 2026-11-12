@@ -1,2 +1,9 @@
 .DS_Store
 _to_delete/
+node_modules/
+dist/
+work/
+.env
+.env.*
+.netlify/
+server/deployment.mjs

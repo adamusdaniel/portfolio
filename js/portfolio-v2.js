@@ -221,93 +221,86 @@
   window.addEventListener('scroll',function(){ requestAnimationFrame(splitTick); },{passive:true});
   window.addEventListener('resize',function(){ splitLayout(); });
 
-  /* ---- private projects vault ----
-     Content is AES-GCM encrypted at build time; the key is derived from the password with PBKDF2.
-     Without the right password the page holds only ciphertext – nothing to reveal by inspecting the source. */
-  var VAULT_DATA=null;
-  var VAULT={open:false, after:null, fails:0, until:0, cards:[]};
-  if(!VAULT_DATA){
-    document.querySelector('.lock-card > p').textContent='Two new case studies are in preparation. Password access will be available soon.';
-    document.getElementById('lockPass').disabled=true;
-    document.getElementById('lockBtn').disabled=true;
-    document.getElementById('lockBtn').querySelector('span').textContent='Coming soon';
+  /* Server-authorized private projects. Passwords and keys never enter storage. */
+  var VAULT={open:false, after:null, cards:[], images:[], generation:0};
+  try { sessionStorage.removeItem('adVault'); } catch (_) {}
+  async function privateApi(path, data){
+    var response=await fetch('/api/'+path,{method:data?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined});
+    var value=await response.json().catch(function(){return {};});
+    if(!response.ok){ var error=new Error(value.error||(response.status===429?'Too many attempts. Please wait a minute.':'Private access is temporarily unavailable.')); error.status=response.status; throw error; }
+    return value;
   }
-  function b64(s){ var b=atob(s), u=new Uint8Array(b.length); for(var i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
-  function ub64(buf){ var s='', u=new Uint8Array(buf); for(var i=0;i<u.length;i++) s+=String.fromCharCode(u[i]); return btoa(s); }
-  async function deriveKey(pass){
-    var base=await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
-    return crypto.subtle.deriveKey({name:'PBKDF2', salt:b64(VAULT_DATA.salt), iterations:VAULT_DATA.iter, hash:'SHA-256'}, base, {name:'AES-GCM', length:256}, true, ['decrypt']);
-  }
-  async function openVault(key){
-    var pt=await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(VAULT_DATA.iv)}, key, b64(VAULT_DATA.ct));
-    var data=JSON.parse(new TextDecoder().decode(pt));
+  async function openVault(){
+    var generation=VAULT.generation;
+    var data=await privateApi('private/content');
+    if(generation!==VAULT.generation) return;
     Object.keys(data.img).forEach(function(k){ IMG[k]=data.img[k]; });
     Object.keys(data.cases).forEach(function(k){ data.cases[k].private=true; CASES[k]=data.cases[k]; });
+    VAULT.images=Object.keys(data.img);
     VAULT.cards=data.cards.map(function(c){ c.private=true; return c; });
     VAULT.open=true;
   }
   function renderMore(){
-    var locked=document.getElementById('moreLocked'), open=document.getElementById('moreOpen');
-    locked.hidden=VAULT.open; open.hidden=!VAULT.open;
+    document.getElementById('moreLocked').hidden=VAULT.open;
+    document.getElementById('moreOpen').hidden=!VAULT.open;
     if(VAULT.open){
       document.querySelectorAll('#filtersMore button').forEach(function(b){ b.classList.toggle('is-on',b.dataset.f==='all'); b.setAttribute('aria-pressed',String(b.dataset.f==='all')); });
-      document.getElementById('more-grid').innerHTML=VAULT.cards.length ? projectGrid(VAULT.cards) : '<p role="status">New projects will appear here soon.</p>';
+      document.getElementById('more-grid').innerHTML=VAULT.cards.length ? projectGrid(VAULT.cards) : '<p role="status">Two new case studies are in preparation. They will appear here when ready.</p>';
       watchOutlines(document.getElementById('more-grid'));
     }
-    else setTimeout(function(){ var i=document.getElementById('lockPass'); if(i && innerWidth>640) i.focus(); },50);
+    else setTimeout(function(){ var i=document.getElementById('lockPass'); if(i && innerWidth>640 && views.more.classList.contains('is-on')) i.focus(); },50);
   }
-  document.getElementById('lockForm').addEventListener('submit', async function(e){
-    e.preventDefault();
-    var err=document.getElementById('lockErr'), btn=document.getElementById('lockBtn'), inp=document.getElementById('lockPass'), card=document.querySelector('.lock-card');
-    var now=Date.now();
-    if(!VAULT_DATA) return;
-    if(now<VAULT.until){ err.textContent='Too many attempts. Try again in '+Math.ceil((VAULT.until-now)/1000)+' s.'; return; }
-    if(!(window.crypto&&crypto.subtle)){ err.textContent='This browser can’t unlock protected content.'; return; }
-    btn.disabled=true; btn.querySelector('span').textContent='Checking…'; err.textContent='';
-    try{
-      var key=await deriveKey(inp.value);
-      await openVault(key);
-      try{ sessionStorage.setItem('adVault', ub64(await crypto.subtle.exportKey('raw', key))); }catch(_){}
-      inp.value=''; VAULT.fails=0;
-      var go=VAULT.after; VAULT.after=null;
-      if(go){ if(go!==location.hash) location.hash=go; else route(); } else { renderMore(); popInGrid('#more-grid'); }
-    }catch(ex){
-      VAULT.fails++;
-      if(VAULT.fails>=3) VAULT.until=Date.now()+Math.min(60000, 5000*Math.pow(2,VAULT.fails-3));
-      err.textContent= VAULT.fails>=3 ? 'Wrong password. Please wait a moment before trying again.' : 'Wrong password. Please try again.';
-      card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
-      inp.select();
-    }
-    btn.disabled=false; btn.querySelector('span').textContent='Unlock';
-  });
-  document.getElementById('lockAgain').addEventListener('click',function(){
-    try{ sessionStorage.removeItem('adVault'); }catch(_){}
+  function clearVault(message){
+    VAULT.generation++;
     Object.keys(CASES).forEach(function(k){ if(CASES[k].private) delete CASES[k]; });
-    Object.keys(IMG).forEach(function(k){ if(k.indexOf('private/')===0) delete IMG[k]; });
+    VAULT.images.forEach(function(k){ delete IMG[k]; });
+    var wasPrivate=location.hash.indexOf('#private/')===0;
     closeLb(); LB.list=[]; LB.i=0;
     document.getElementById('lbImg').removeAttribute('src');
     document.getElementById('lbC').textContent='';
-    if(RO) document.querySelectorAll('#more-grid .card, #caseRoot .card').forEach(function(c){ RO.unobserve(c); });
     document.getElementById('more-grid').replaceChildren();
-    document.getElementById('caseRoot').replaceChildren();
-    SP=null;
-    document.title='Daniel Adamus v2';
-    VAULT.open=false; VAULT.cards=[]; VAULT.after=null;
+    if(wasPrivate){ document.getElementById('caseRoot').replaceChildren(); SP=null; }
+    VAULT.open=false; VAULT.cards=[]; VAULT.images=[]; VAULT.after=null;
     document.getElementById('lockPass').value='';
-    document.getElementById('lockErr').textContent='';
+    document.getElementById('lockErr').textContent=message||'';
+    if(wasPrivate) location.hash='#more-projects';
     renderMore();
+  }
+  document.getElementById('lockForm').addEventListener('submit',async function(e){
+    e.preventDefault();
+    var err=document.getElementById('lockErr'), btn=document.getElementById('lockBtn'), inp=document.getElementById('lockPass');
+    btn.disabled=true; btn.querySelector('span').textContent='Checking…'; err.textContent='';
+    try {
+      await privateApi('access/login',{password:inp.value});
+      inp.value=''; await openVault();
+      var go=VAULT.after; VAULT.after=null;
+      if(go){ if(go!==location.hash) location.hash=go; else route(); }
+      else { renderMore(); popInGrid('#more-grid'); }
+    } catch(ex){ err.textContent=ex.message; inp.value=''; inp.focus(); }
+    finally { btn.disabled=false; btn.querySelector('span').textContent='Unlock'; }
+  });
+  document.getElementById('lockAgain').addEventListener('click',async function(){
+    clearVault();
+    try { await privateApi('access/logout',{}); }
+    catch(ex){ document.getElementById('lockErr').textContent='Could not end the server session. Please retry Unlock, then Lock again.'; }
   });
   function popInGrid(sel){ document.querySelectorAll(sel+' .card').forEach(function(c,i){ c.classList.remove('pop'); void c.offsetWidth; c.style.animationDelay=(i*60)+'ms'; c.classList.add('pop'); }); }
-  /* restore an unlocked session in this tab */
+  async function checkPrivateSession(){
+    if(!VAULT.open) return;
+    try { await privateApi('access/session'); }
+    catch(ex){ clearVault(ex.status===401?ex.message:'Unable to check access. Please unlock again.'); }
+  }
+  setInterval(checkPrivateSession,30000);
+  window.addEventListener('focus',checkPrivateSession);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) checkPrivateSession(); });
+  document.addEventListener('error',function(e){
+    if(e.target.tagName==='IMG' && (e.target.getAttribute('src')||'').indexOf('/api/private/images/')===0) checkPrivateSession();
+  },true);
   (async function(){
-    var raw=null; try{ raw=sessionStorage.getItem('adVault'); }catch(_){}
-    if(!VAULT_DATA){ try{ sessionStorage.removeItem('adVault'); }catch(_){} return; }
-    if(!raw || !(window.crypto&&crypto.subtle)) return;
-    try{
-      var key=await crypto.subtle.importKey('raw', b64(raw), {name:'AES-GCM'}, true, ['decrypt']);
-      await openVault(key);
+    try {
+      await openVault();
       var h=location.hash; if(h==='#more-projects'||h.indexOf('#private/')===0) route();
-    }catch(_){ try{ sessionStorage.removeItem('adVault'); }catch(__){} }
+    } catch(_) {}
   })();
   document.getElementById('filtersMore').addEventListener('click',function(e){
     var b=e.target.closest('button'); if(!b) return;
