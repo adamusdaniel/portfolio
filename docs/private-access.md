@@ -5,7 +5,7 @@
 Stały adres dla wszystkich odbiorców: **https://v2--adamusdaniel.netlify.app/#more-projects**.
 Panel właściciela: **https://v2--adamusdaniel.netlify.app/owner/**.
 
-Każdy dostęp ma własne, automatycznie losowane hasło, etykietę osoby/firmy i datę ważności (domyślnie 7 dni od utworzenia). Rekruter nie zakłada konta. Panel pokazuje „Użyte / Nieużyte” i datę pierwszego poprawnego użycia hasła. Nie jest to potwierdzenie tożsamości: ktoś mógł przekazać hasło dalej. Nie ma licznika wizyt ani historii oglądanych projektów.
+Każdy dostęp ma własne hasło ustawiane przez Ciebie (minimum 12 znaków), etykietę osoby/firmy i datę ważności (domyślnie 7 dni od utworzenia). Rekruter nie zakłada konta. Panel pokazuje „Użyte / Nieużyte” i datę pierwszego poprawnego użycia hasła. Nie jest to potwierdzenie tożsamości: ktoś mógł przekazać hasło dalej. Nie ma licznika wizyt ani historii oglądanych projektów.
 
 TAURON pozostaje publiczny. Dwa przyszłe projekty nie są zastąpione fikcyjną zawartością: po zalogowaniu sekcja jest pusta, dopóki nie wgrasz prawdziwych materiałów.
 
@@ -29,10 +29,10 @@ Brak konfiguracji lub niedostępny magazyn kończy się odmową dostępu (503), 
 
 1. Otwórz panel i zaloguj się hasłem właściciela.
 2. Wpisz nazwę osoby lub firmy. To Twoja etykieta, nie zweryfikowane dane odbiorcy.
-3. Pozostaw 7 dni lub wpisz inną wartość (od 1 godziny, czyli 0,0416667 dnia, do 365 dni). Kliknij **Utwórz dostęp**.
+3. Wpisz własne hasło odbiorcy (12–128 znaków, bez spacji na początku i końcu). Może to być fraza z kilku słów. Nie używaj swojego hasła właściciela. Każdy wpis i reset wymaga innego, nieużywanego wcześniej hasła. Pozostaw 7 dni lub wpisz inną wartość (od 1 godziny, czyli 0,0416667 dnia, do 365 dni). Kliknij **Utwórz dostęp**.
 4. Kliknij **Kopiuj hasło**. Nowe hasło jest dostępne tylko w tym momencie — zapisz je, zanim zamkniesz lub odświeżysz panel. Nie da się go później odczytać; można je zresetować.
 5. Wyślij odbiorcy stały adres sekcji More projects i jego hasło. Nie dopisuj hasła do linku.
-6. **Resetuj hasło** unieważnia poprzednie hasło i sesje tylko tego wpisu. Pozostawia termin i datę pierwszego użycia. **Wyłącz dostęp** odcina go przed terminem. Wygasły/wyłączony wpis zastąp nowym dostępem. Panel poprosi o potwierdzenie tych działań.
+6. **Resetuj hasło** otwiera formularz do wpisania nowego hasła. Po zapisaniu unieważnia poprzednie hasło i sesje tylko tego wpisu. Pozostawia termin i datę pierwszego użycia. **Wyłącz dostęp** odcina go przed terminem. Wygasły/wyłączony wpis zastąp nowym dostępem. Panel poprosi o potwierdzenie tych działań.
 7. Kliknij **Odśwież**, aby zobaczyć aktualny stan użycia. Czasy są wyświetlane w lokalnej strefie przeglądarki. **Wyloguj** kończy sesję panelu (maksymalnie trwa ona godzinę).
 
 Pierwsze użycie oznacza pierwsze poprawne logowanie do sekcji, również jeśli projekty są jeszcze w przygotowaniu. Nie zmienia się po ponownym logowaniu ani resecie hasła. Dostęp rekrutera ma sesję do 24 godzin, maksymalnie do końca ważności hasła; potem może ponownie wpisać nadal aktywne hasło. Serwer sprawdza cofnięcie, termin i wersję dostępu przy każdym żądaniu treści i obrazu. Otwarta strona sprawdza sesję co 30 sekund oraz po powrocie do okna. Już pobranych przez odbiorcę kopii i zrzutów ekranu nie można wycofać.
@@ -78,7 +78,7 @@ Stan oficjalnej dokumentacji sprawdzony 12 listopada 2026: obecny Free obejmuje 
 
 ## Dla osoby utrzymującej kod
 
-- `server/access.mjs`: API i autoryzacja. Losowe 256-bitowe sekrety odbiorców są przechowywane wyłącznie jako SHA-256; nie są to hasła wymyślane przez człowieka. Hasło właściciela: scrypt z losową solą. Sesje: podpis HMAC, oddzielne ciasteczka `__Host-`, Secure, HttpOnly, SameSite=Strict. Zmiana hasha właściciela unieważnia jego sesje; zmiana klucza sesji unieważnia wszystkie sesje, ale nie hasła odbiorców.
+- `server/access.mjs`: API i autoryzacja. Własne hasła odbiorców są przechowywane jako scrypt z losową solą. Wyszukiwanie hasłem bez identyfikatora używa osobnego, kosztownego skrótu scrypt (stała sól domenowa); nie używa klucza sesji. Indeksy są rezerwowane atomowo i nie są ponownie używane, także po wygaśnięciu/wyłączeniu lub przerwanym zapisie. Przy logowaniu sprawdzana jest aktualna wersja wpisu i hash hasła, więc osierocony indeks nie przyznaje dostępu. Starsze losowe 256-bitowe hasła (SHA-256) nadal działają bez migracji i mogą być zastąpione własnym hasłem przez reset. Hasło właściciela: scrypt z losową solą. Sesje: podpis HMAC, oddzielne ciasteczka `__Host-`, Secure, HttpOnly, SameSite=Strict. Zmiana hasha właściciela unieważnia jego sesje; zmiana klucza sesji unieważnia wszystkie sesje, ale nie hasła odbiorców.
 - `server/runtime.mjs`: magazyn site-scoped Blobs z `consistency: strong`. Build generuje ignorowane `server/deployment.mjs` z identyfikatorem brancha i kontekstem, bo zmienne `BRANCH`/`CONTEXT` nie muszą być dostępne w runtime Functions. Build i bundle funkcji muszą powstawać razem.
 - Każdy odbiorca ma osobny obiekt `grants-<id>`. Reset/wyłączenie zastępują jeden obiekt pod warunkiem zgodności ETag i wersji; równoczesna zmiana zwraca 409. Pierwsze użycie jest osobnym `used-<id>` zapisanym z `onlyIfNew`. Brak liczników i wieloobiektowych transakcji. Treść i obrazy są dostępne wyłącznie przez autoryzowane Functions, bez publicznych/signed URL ani Image CDN.
 - Wszystkie odpowiedzi API mają `no-store`; brak CORS, POST wymaga zgodnego Origin i JSON. Używaj HTTPS. Nie loguj treści żądań, haseł, ciasteczek ani danych magazynu.

@@ -8,11 +8,11 @@ import path from 'node:path';
 import {BlobsServer} from '@netlify/blobs/server';
 import {getStore} from '@netlify/blobs';
 async function owner(s) {const r=await s.request('owner/login',{data:{password:s.password}});assert.equal(r.status,200);return s.cookie(r);}
-async function create(s,cookie,label='Test company',days) {const r=await s.request('owner/grants',{cookie,data:{label,...(days?{days}:{})}});assert.equal(r.status,201);return r.json();}
+async function create(s,cookie,label='Test company',days,password) {const r=await s.request('owner/grants',{cookie,data:{label,...(days?{days}:{}),...(password!==undefined?{password}:{})}});assert.equal(r.status,201);return r.json();}
 async function login(s,password) {return s.request('access/login',{data:{password}});}
 async function image(s,cookie) {const r=await s.request('owner/images',{cookie,data:{base64:png.toString('base64')}});assert.equal(r.status,200);return (await r.json()).url.replace('/api/','');}
-async function lifecycle(s) {
- const o=await owner(s), a=await create(s,o), b=await create(s,o,'Other company');
+async function lifecycle(s,custom=false) {
+ const o=await owner(s), a=await create(s,o,'Test company',undefined,custom?'Three easy words!':undefined), b=await create(s,o,'Other company',undefined,custom?'Another easy phrase!':undefined);
  assert.equal(a.grant.expiresAt-s.now(),7*86400000);
  assert.equal(a.grant.firstUsedAt,null);
  assert(!JSON.stringify(await (await s.request('owner/grants',{cookie:o})).json()).includes(a.password));
@@ -28,7 +28,7 @@ async function lifecycle(s) {
  await login(s,a.password);
  let list=await (await s.request('owner/grants',{cookie:o})).json();assert.equal(list.grants.find(g=>g.id===a.grant.id).firstUsedAt,first);
  const ir=await s.request(url,{cookie:ac});assert.equal(ir.status,200);assert.equal(ir.headers.get('cache-control'),'private, no-store, max-age=0');assert.deepEqual(Buffer.from(await ir.arrayBuffer()),png);
- const reset=await s.request(`owner/grants/${a.grant.id}/reset`,{cookie:o,data:{version:a.grant.version}});assert.equal(reset.status,200);const updated=await reset.json();
+ const reset=await s.request(`owner/grants/${a.grant.id}/reset`,{cookie:o,data:{version:a.grant.version,...(custom?{password:'My new easy phrase!'}:{})}});assert.equal(reset.status,200);const updated=await reset.json();
  assert.equal(updated.grant.firstUsedAt,first);assert.equal(updated.grant.expiresAt,a.grant.expiresAt);
  assert.equal((await login(s,a.password)).status,401);
  for(const endpoint of ['private/content',url,'access/session']) assert.equal((await s.request(endpoint,{cookie:ac})).status,401);
@@ -62,7 +62,7 @@ test('actual Netlify Blobs SDK against local emulator: persisted lifecycle',asyn
     return response;
   };
   store=getStore({name:'test-access',siteID:'local-test',token:'test-only',edgeURL:`http://127.0.0.1:${port}`,uncachedEdgeURL:`http://127.0.0.1:${port}`,consistency:'strong',fetch:transport});
-  await lifecycle(setup(store));
+  await lifecycle(setup(store)); await lifecycle(setup(store),true);
  }
  finally{await server.stop();await rm(directory,{recursive:true,force:true});}
 });
@@ -72,7 +72,7 @@ test('CSRF, methods, forged cookies, owner password rotation and missing configu
  assert.equal((await s.request('owner/grants',{cookie:o,data:{label:'CSRF'},headers:{Origin:''}})).status,403);
  assert.equal((await s.request('owner/grants',{method:'DELETE',cookie:o})).status,405);
  assert.equal((await s.request('owner/grants',{cookie:o+'tampered'})).status,401);
- s.env.ACCESS_OWNER_PASSWORD_HASH=s.env.ACCESS_OWNER_PASSWORD_HASH.replace(/.$/,'0');
+ s.env.ACCESS_OWNER_PASSWORD_HASH=s.env.ACCESS_OWNER_PASSWORD_HASH.replace(/.$/,c=>c==='0'?'1':'0');
  assert.equal((await s.request('owner/grants',{cookie:o})).status,401);
  const handler=createAccess({env:{},store:s.store});assert.equal((await handler(new Request('https://portfolio.test/api/private/content'))).status,503);
 });
@@ -99,4 +99,28 @@ test('public build excludes backend, credential files, backups and tools; TAURON
  const names=await readdir(root);for(const forbidden of ['server','netlify','tools','node_modules','.htpasswd','.env','.git']) assert(!names.includes(forbidden),forbidden);
  assert((await readFile(path.join(root,'content/tauron/case.js'),'utf8')).includes('tauron-search'));
  assert(!(await readFile(path.join(root,'js/portfolio-v2.js'),'utf8')).includes('VAULT_DATA'));
+});
+
+test('chosen passwords: complete lifecycle and isolation',async()=>lifecycle(setup(),true));
+test('chosen password validation, uniqueness, failed reset and session-key rotation',async()=>{
+ const s=setup(),o=await owner(s);
+ for(const password of ['short',' leading spaces!','trailing spaces! ','x'.repeat(129),123]) {
+  assert.equal((await s.request('owner/grants',{cookie:o,data:{label:'Invalid',password}})).status,400);
+ }
+ const password='My chosen phrase!';
+ const responses=await Promise.all([1,2].map(()=>s.request('owner/grants',{cookie:o,data:{label:'Same password',password}})));
+ assert.deepEqual(responses.map(r=>r.status).sort(),[201,409]);
+ const a=await responses.find(r=>r.status===201).json();assert.equal(a.password,password);
+ const oldCookie=s.cookie(await login(s,password));
+ const fail=s.store.setJSON.bind(s.store);
+ s.store.setJSON=async(key,data,options)=>key===`grants-${a.grant.id}` ? {modified:false} : fail(key,data,options);
+ const reset=await s.request(`owner/grants/${a.grant.id}/reset`,{cookie:o,data:{version:a.grant.version,password:'Failed reset phrase!'}});
+ assert.equal(reset.status,409); assert.equal((await login(s,'Failed reset phrase!')).status,401);
+ assert.equal((await login(s,password)).status,200);
+ s.store.setJSON=fail;
+ s.env.ACCESS_SESSION_SECRET='different-session-key-for-rotation-test-only-12345';
+ assert.equal((await s.request('access/session',{cookie:oldCookie})).status,401);
+ assert.equal((await login(s,password)).status,200);
+ const list=await (await s.request('owner/grants',{cookie:await owner(s)})).json();
+ assert(!JSON.stringify(list).includes(password));assert(!JSON.stringify([...s.store.entries]).includes(password));
 });

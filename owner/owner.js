@@ -1,6 +1,6 @@
 (() => {
   const $ = id => document.getElementById(id);
-  let grants = [], busy = false;
+  let grants = [], busy = false, resetGrant = null;
   $('privateLink').textContent = location.origin + '/#more-projects';
   async function api(path, data) {
     const response = await fetch('/api/owner/' + path, {method:data?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined});
@@ -12,7 +12,8 @@
     return value;
   }
   function hideSecret() { $('newPassword').value = ''; $('secretBox').hidden = true; }
-  function showLogin() { $('login').hidden=false; $('panel').hidden=true; $('grants').replaceChildren(); hideSecret(); grants=[]; }
+  function closeReset() { $('resetDialog').close(); $('resetPassword').value=''; $('resetError').textContent=''; resetGrant=null; }
+  function showLogin() { closeReset(); $('recipientPassword').value=''; $('login').hidden=false; $('panel').hidden=true; $('grants').replaceChildren(); hideSecret(); grants=[]; }
   const date = ms => ms ? new Date(ms).toLocaleString('pl-PL') : '—';
   function element(tag, text) { const e=document.createElement(tag); e.textContent=text; return e; }
   function render() {
@@ -27,13 +28,18 @@
       const actions=element('div',''); actions.className='owner-actions';
       for (const [action,label] of [['reset','Resetuj hasło'],['revoke','Wyłącz dostęp']]) {
         const b=element('button',label); b.className='btn ghost'; b.disabled=g.revoked||g.expiresAt<=Date.now();
-        b.addEventListener('click',()=>run(async()=>{
+        b.addEventListener('click',()=>{
+          if(action==='reset') {
+            $('resetError').textContent=''; resetGrant=g; $('resetLabel').textContent=g.label; $('resetPassword').value='';
+            $('resetDialog').showModal(); $('resetPassword').focus(); return;
+          }
+          run(async()=>{
           if (!confirm(`${label}: ${g.label}? ${action==='reset'?'Poprzednie hasło i sesje przestaną działać.':'Dostęp przestanie działać natychmiast.'}`)) return;
           hideSecret();
           const result=await api(`grants/${g.id}/${action}`,{version:g.version});
           if(result.password) reveal(result.password);
           await load(); $('notice').textContent=action==='reset'?'Hasło zostało zresetowane.':'Dostęp został wyłączony.';
-        })); actions.append(b);
+        }); }); actions.append(b);
       }
       card.append(actions); $('grants').append(card);
     }
@@ -43,11 +49,20 @@
   async function run(fn) {
     if(busy) return; busy=true; $('notice').textContent='';
     document.querySelectorAll('button').forEach(b=>b.disabled=true);
-    try { await fn(); } catch(e) { $('notice').textContent=e.message; }
+    try { await fn(); } catch(e) { $('notice').textContent=e.message; if($('resetDialog').open) $('resetError').textContent=e.message; }
     finally { busy=false; document.querySelectorAll('button').forEach(b=>b.disabled=false); render(); }
   }
   $('ownerLogin').addEventListener('submit',e=>{e.preventDefault();run(async()=>{try{await api('login',{password:$('ownerPassword').value});await load();}finally{$('ownerPassword').value='';}});});
-  $('create').addEventListener('submit',e=>{e.preventDefault();run(async()=>{hideSecret();const result=await api('grants',{label:$('label').value,days:Number($('days').value)});$('label').value='';await load();reveal(result.password);$('notice').textContent='Dostęp utworzony. Skopiuj nowe hasło.';});});
+  $('create').addEventListener('submit',e=>{e.preventDefault();run(async()=>{hideSecret();const result=await api('grants',{label:$('label').value,days:Number($('days').value),password:$('recipientPassword').value});$('label').value='';$('recipientPassword').value='';await load();reveal(result.password);$('notice').textContent='Dostęp utworzony. Skopiuj nowe hasło.';});});
+  $('cancelReset').addEventListener('click',closeReset);
+  $('resetDialog').addEventListener('cancel',closeReset);
+  $('resetForm').addEventListener('submit',e=>{e.preventDefault();run(async()=>{
+    const g=resetGrant; if(!g) return;
+    const password=$('resetPassword').value;
+    const result=await api(`grants/${g.id}/reset`,{version:g.version,password});
+    closeReset(); hideSecret(); await load(); reveal(result.password);
+    $('notice').textContent='Hasło zostało zresetowane.';
+  });});
   $('upload').addEventListener('submit',e=>{e.preventDefault();run(async()=>{
     const file=$('bundle').files[0];
     if(!file || file.size>60000000) throw new Error('Wybierz pakiet mniejszy niż 60 MB.');

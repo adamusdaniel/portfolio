@@ -41,6 +41,18 @@ export function createAccess({store, env, now = Date.now}) {
     if (!g || g.revoked || g.expiresAt <= now() || g.version !== s.version) fail(401, 'Access expired or disabled. Please enter a valid password.');
     return g;
   }
+  // Slow deterministic lookup avoids scanning recipients for password-only login.
+  // It is independent of the session key, so rotating sessions preserves passwords.
+  const passwordIndex = password => 'passwords-'+scryptSync(password,'portfolio-recipient-index-v1',32).toString('hex');
+  async function reservePassword(password,id,version) {
+    if(typeof password!=='string' || password.length<12 || password.length>128 || password!==password.trim() || /^[a-f0-9]{32}\./.test(password)) fail(400,'Wpisz własne hasło od 12 do 128 znaków, bez spacji na początku i końcu.');
+    const hash=ownerHash(password);
+    const result=await store.setJSON(passwordIndex(password),{id,version},{onlyIfNew:true});
+    if(!result.modified) fail(409,'To hasło było już przypisane do dostępu. Wybierz inne.');
+    // Reservations remain immutable, including after expiry or a failed update.
+    // Stale indexes never authorize: login also checks the current grant version.
+    return hash;
+  }
   async function publicGrant(g) {
     const used = await store.get(`used-${g.id}`, {type:'json'});
     const {passwordHash, ...safe} = g;
@@ -60,9 +72,16 @@ export function createAccess({store, env, now = Date.now}) {
           if (!equal(ownerHash(password, expected.split(':')[1]), expected)) fail(401, 'Nieprawidłowe hasło.');
           return json({ok:true}, 200, {'Set-Cookie':cookie('owner', session('owner', {version:ownerVersion()}), 3600)});
         }
-        const [id] = password.split('.');
-        const g = idPattern.test(id) ? await store.get(`grants-${id}`, {type:'json'}) : null;
-        if (!g || !equal(digest(password), g.passwordHash) || g.revoked || g.expiresAt <= now()) fail(401, 'Invalid password or inactive access.');
+        const [legacyId] = password.split('.');
+        let g=idPattern.test(legacyId) ? await store.get(`grants-${legacyId}`, {type:'json'}) : null;
+        let valid=g && !g.passwordHash.startsWith('scrypt:') && equal(digest(password),g.passwordHash);
+        if(!valid) {
+          const index=await store.get(passwordIndex(password),{type:'json'});
+          g=index ? await store.get(`grants-${index.id}`,{type:'json'}) : null;
+          valid=g && g.version===index.version && g.passwordHash.startsWith('scrypt:') && equal(ownerHash(password,g.passwordHash.split(':')[1]),g.passwordHash);
+        }
+        if (!valid || g.revoked || g.expiresAt <= now()) fail(401, 'Invalid password or inactive access.');
+        const id=g.id;
         await store.setJSON(`used-${id}`, {at:now()}, {onlyIfNew:true});
         return json({ok:true}, 200, {'Set-Cookie':cookie('recipient', session('recipient', {id,version:g.version,exp:Math.min(g.expiresAt, now()+86400000)}), Math.min(86400,Math.floor((g.expiresAt-now())/1000)))});
       }
@@ -100,8 +119,9 @@ export function createAccess({store, env, now = Date.now}) {
         if (req.method === 'POST' && path === '/api/owner/grants') {
           const data = await body(req), days = data.days ?? 7;
           if (typeof data.label !== 'string' || !data.label.trim() || data.label.length > 120 || !Number.isFinite(days) || days < 1/24 || days > 365) fail(400, 'Podaj nazwę i ważność od 1 godziny do 365 dni.');
-          const id = randomBytes(16).toString('hex'), password = `${id}.${random()}`;
-          const g = {id,label:data.label.trim(),createdAt:now(),expiresAt:now()+days*86400000,revoked:false,version:random(),passwordHash:digest(password)};
+          const id = randomBytes(16).toString('hex'), password = data.password ?? `${id}.${random()}`;
+          const g = {id,label:data.label.trim(),createdAt:now(),expiresAt:now()+days*86400000,revoked:false,version:random(),passwordHash:data.password!==undefined?'':digest(password)};
+          if(data.password!==undefined) g.passwordHash=await reservePassword(password,id,g.version);
           const result = await store.setJSON(`grants-${id}`, g, {onlyIfNew:true});
           if (!result.modified) fail(409, 'Spróbuj ponownie.');
           return json({grant:await publicGrant(g),password},201);
@@ -115,12 +135,13 @@ export function createAccess({store, env, now = Date.now}) {
           const g = entry.data;
           if (data.version !== g.version) fail(409, 'Dostęp zmienił się. Odśwież listę.');
           let password;
+          const nextVersion=random();
           if (match[2] === 'reset') {
             if (g.revoked || g.expiresAt <= now()) fail(400, 'Utwórz nowy dostęp dla wygasłego lub wyłączonego wpisu.');
-            password = `${g.id}.${random()}`;
-            g.passwordHash = digest(password);
+            password = data.password ?? `${g.id}.${random()}`;
+            g.passwordHash = data.password!==undefined ? await reservePassword(password,g.id,nextVersion) : digest(password);
           } else g.revoked = true;
-          g.version = random();
+          g.version = nextVersion;
           const result = await store.setJSON(key,g,{onlyIfMatch:entry.etag});
           if (!result.modified) fail(409, 'Równoczesna zmiana. Odśwież listę.');
           return json({grant:await publicGrant(g), ...(password ? {password} : {})});

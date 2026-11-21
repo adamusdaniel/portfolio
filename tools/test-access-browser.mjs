@@ -38,8 +38,8 @@ try {
  await owner.locator('#ownerPassword').fill('wrong');await owner.locator('#ownerLogin button').click();await owner.getByText('Nieprawidłowe hasło.',{exact:true}).waitFor();
  await owner.locator('#ownerPassword').fill(s.password);await owner.locator('#ownerLogin button').click();await owner.locator('#panel').waitFor();
  assert.equal(await owner.locator('#days').inputValue(),'7');
- await owner.locator('#label').fill('Browser test company');await owner.locator('#create button').click();await owner.locator('#secretBox').waitFor();
- const password=await owner.locator('#newPassword').inputValue();assert(password.length>60);
+ await owner.locator('#label').fill('Browser test company');await owner.locator('#recipientPassword').fill('My browser test phrase!');await owner.locator('#create button').click();await owner.locator('#secretBox').waitFor();
+ const password=await owner.locator('#newPassword').inputValue();assert.equal(password,'My browser test phrase!');
  for(const width of [375,768,1440]) {
   await owner.setViewportSize({width,height:950});
   assert(!await owner.evaluate(()=>document.documentElement.scrollWidth>innerWidth), 'Owner overflow at '+width);
@@ -56,7 +56,7 @@ try {
  await recipient.reload();await recipient.locator('#more-grid .card').waitFor();
  await recipient.locator('#more-grid .card').click();await recipient.locator('#caseRoot h1').waitFor();assert.equal(await recipient.locator('#caseRoot h1').textContent(),'Test fixture');
  await owner.locator('#refresh').click();await owner.getByText('Użyte',{exact:true}).waitFor();
- owner.on('dialog',d=>d.accept());await owner.getByRole('button',{name:'Resetuj hasło',exact:true}).click();await owner.getByText('Hasło zostało zresetowane.',{exact:true}).waitFor();
+ owner.on('dialog',d=>d.accept());await owner.getByRole('button',{name:'Resetuj hasło',exact:true}).click();await owner.locator('#resetPassword').fill(password);await owner.getByRole('button',{name:'Zapisz nowe hasło',exact:true}).click();await owner.locator('#resetError').filter({hasText:'To hasło było już'}).waitFor();await owner.locator('#resetPassword').fill('My reset test phrase!');await owner.getByRole('button',{name:'Zapisz nowe hasło',exact:true}).click();await owner.getByText('Hasło zostało zresetowane.',{exact:true}).waitFor();
  const resetPassword=await owner.locator('#newPassword').inputValue();assert.notEqual(resetPassword,password);
  assert.equal((await recipient.request.get(base+src)).status(),401);
  await recipient.reload();await recipient.locator('#lockPass').waitFor();
