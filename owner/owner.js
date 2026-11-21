@@ -18,7 +18,7 @@
   const date = ms => ms ? new Date(ms).toLocaleString('pl-PL') : '—';
   function element(tag, text) { const e=document.createElement(tag); e.textContent=text; return e; }
   function render() {
-    $('grants').replaceChildren();
+    $('grants').replaceChildren();$('grants').setAttribute('aria-busy',String(busy));
     if (!grants.length) $('grants').append(element('p','Brak dostępów. Utwórz pierwszy powyżej.'));
     if(!grants.length) return;
     const wrapper=element('div',''); wrapper.className='grant-table-wrap';wrapper.tabIndex=0;
@@ -26,7 +26,7 @@
     const table=element('table','');table.className='grant-table';
     const caption=element('caption','Dostępy do prywatnych projektów');table.append(caption);
     const head=document.createElement('thead'),heading=document.createElement('tr');
-    for(const label of ['Osoba / firma','Stan','Utworzono','Ważność','Użycie hasła','Pierwsze użycie','Akcje']) {
+    for(const label of ['Osoba / firma','Stan','Utworzono','Ważność','Pierwsze użycie','Akcje']) {
       const th=element('th',label);th.scope='col';heading.append(th);
     }
     head.append(heading);table.append(head);const body=document.createElement('tbody');
@@ -36,7 +36,7 @@
       const state=g.revoked?'Wyłączony':expired(g)?'Wygasły':'Aktywny';
       const stateCell=document.createElement('td'),badge=element('span',state);
       badge.className='grant-status '+(state==='Aktywny'?'is-active':'is-inactive');stateCell.append(badge);row.append(stateCell);
-      for(const value of [date(g.createdAt),g.expiresAt===null?'Bez daty wygaśnięcia':date(g.expiresAt),g.firstUsedAt?'Użyte':'Nieużyte',date(g.firstUsedAt)]) row.append(element('td',value));
+      for(const value of [date(g.createdAt),g.expiresAt===null?'Bez daty wygaśnięcia':date(g.expiresAt),g.firstUsedAt?date(g.firstUsedAt):'Nie było użyte']) row.append(element('td',value));
       const actionCell=document.createElement('td');actionCell.className='grant-actions-cell';
       const actions=element('div','');actions.className='grant-actions';
       for(const [action,label] of [['reset','Resetuj hasło'],['revoke','Wyłącz'],['delete','Usuń']]) {
@@ -44,6 +44,7 @@
         button.disabled=action!=='delete'&&(g.revoked||expired(g));
         button.setAttribute('aria-label',label+': '+g.label);
         button.addEventListener('click',()=>{
+          if(busy) return;
           if(action==='reset') {
             $('resetError').textContent='';resetGrant=g;$('resetLabel').textContent=g.label;$('resetPassword').value='';
             $('resetDialog').showModal();$('resetPassword').focus();return;
@@ -59,12 +60,24 @@
       }
       actionCell.append(actions);row.append(actionCell);body.append(row);
     }
-    table.append(body);wrapper.append(table);$('grants').append(wrapper);
+    table.append(body);wrapper.append(table);$('grants').append(wrapper);updateTableBusy();
+  }
+  function updateTableBusy(){
+    const host=$('grants'),wrapper=host.querySelector('.grant-table-wrap');
+    host.setAttribute('aria-busy',String(busy));
+    host.querySelector('.grant-table-loader')?.remove();
+    if(!wrapper) return;
+    wrapper.inert=busy;
+    if(busy){
+      const overlay=element('div','');overlay.className='grant-table-loader';overlay.setAttribute('role','status');
+      const spinner=element('span','');spinner.className='grant-spinner';spinner.setAttribute('aria-hidden','true');
+      overlay.append(spinner,element('span','Zapisywanie zmian…'));host.append(overlay);
+    }
   }
   function reveal(password) { $('newPassword').value=password; $('secretBox').hidden=false; $('newPassword').focus(); }
   async function load() { grants=(await api('grants')).grants; $('login').hidden=true; $('panel').hidden=false; render(); }
   async function run(fn) {
-    if(busy) return; busy=true; $('notice').textContent='';
+    if(busy) return; busy=true; $('notice').textContent='';updateTableBusy();
     document.querySelectorAll('button').forEach(b=>b.disabled=true);
     try { await fn(); } catch(e) { $('notice').textContent=e.message; if($('resetDialog').open) $('resetError').textContent=e.message; }
     finally { busy=false; document.querySelectorAll('button').forEach(b=>b.disabled=false); render(); }

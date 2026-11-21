@@ -16,7 +16,7 @@ Run `npm ci` and `npm run build`; Netlify publishes only `dist/`. For public-onl
 
 ## Shared components and data
 
-Two layouts remain intentional: `long` for narrative case studies, and `showcase` for shorter image-led projects. Showcase uses a wide, normal vertical page: readable text first, followed by a full-width gallery instead of synchronized narrow columns. Do not add unverified research, outcomes or client details to make their narratives match.
+Two layouts remain intentional: `long` for narrative case studies, and `showcase` for shorter image-led projects. Showcase uses a viewport-wide layout with the original synchronized media/text columns: the shorter column stops at its top or bottom while the longer continues. Below 900px it retains its original stacked layout. Do not add unverified research, outcomes or client details to make their narratives match.
 
 Use case `tags` from this vocabulary: Product design, UI design, Design strategy, Design systems, Web, Mobile app, Email, Accessibility. Filters use exact tags, and cards display all tags used for filtering. The case header uses the same tags.
 
@@ -48,4 +48,6 @@ The menu Projects link scrolls the homepage to `#projects`. `#all-projects` and 
 
 Homepage section links align the section heading below the measured sticky menu with 24px extra space, including navigation back from case views.
 
-Case hero images and illustrations preserve their intrinsic aspect ratio and are never enlarged beyond their natural size. Oversized images shrink to fit the available width; different image widths are intentional. Card thumbnails keep their existing crop. Showcase galleries use up to 1600px overall page width with smaller side gutters, while prose stays within 800px. The existing image preview remains keyboard accessible.
+Case hero images and illustrations preserve their intrinsic aspect ratio and are never enlarged beyond their natural size. Oversized images shrink to fit the available width; different image widths are intentional. Card thumbnails keep their existing crop. Showcase columns use the full available page width with smaller side gutters, while prose stays within 800px. The existing image preview remains keyboard accessible.
+
+Menu links update browser history without native fragment scrolling. Anchor alignment is checked again after the menu/reveal transition and font loading; manual input cancels pending alignment. The owner table merges password usage and its date into First use, and blocks pointer/keyboard actions with an accessible loading overlay until an operation succeeds or fails.

@@ -757,14 +757,15 @@ footer{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0p
 
 /* Preserve artwork dimensions. Reduce to fit the screen, never stretch or crop. */
 #caseRoot .case-hero{width:fit-content!important;max-width:100%;aspect-ratio:auto!important;margin-inline:auto!important}
-#caseRoot .case-hero img,#caseRoot .case-body figure img,#caseRoot .showcase-gallery img{width:auto;height:auto;max-width:100%;object-fit:contain;margin-inline:auto}
-#caseRoot.showcase-case{--gutter:clamp(16px,3vw,48px);max-width:1600px}
+#caseRoot .case-hero img,#caseRoot .case-body figure img,#caseRoot .split-media img{width:auto;height:auto;max-width:100%;object-fit:contain;margin-inline:auto}
+#caseRoot.showcase-case{--gutter:clamp(16px,3vw,48px);max-width:none}
 #caseRoot.showcase-case .case-lead .case-top{position:static;margin-bottom:20px}
-#caseRoot.showcase-case .case-head,#caseRoot.showcase-case .roles,#caseRoot.showcase-case .showcase-copy{width:100%;max-width:800px;margin-inline:auto}
-#caseRoot.showcase-case .showcase-copy{margin-top:32px}
-.showcase-gallery{display:flex;flex-direction:column;align-items:center;gap:32px;margin-top:48px;width:100%}
-.showcase-gallery figure{width:fit-content;max-width:100%;margin:0;cursor:zoom-in}
-.showcase-gallery img{border-radius:16px;display:block}
-.showcase-gallery figcaption{font:var(--t-small);color:var(--text-3);line-height:1.6;max-width:720px;margin:12px auto 0}
-.showcase-gallery figure:focus-visible{outline:2px solid var(--band);outline-offset:6px;border-radius:16px}
-@media(max-width:640px){.showcase-gallery{gap:24px;margin-top:32px}.showcase-gallery img{border-radius:10px}}
+#caseRoot.showcase-case .case-head,#caseRoot.showcase-case .roles{width:100%;max-width:800px;margin-inline:auto}
+/* Wide showcase keeps the original synchronized two-column scrolling. */
+#caseRoot.showcase-case>.split-track{width:100%;max-width:none;margin-inline:0}
+#caseRoot.showcase-case .split-text .case-body{max-width:800px}
+#caseRoot.showcase-case .split{grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:clamp(24px,4vw,64px)}
+#caseRoot .split-media .shot img{width:auto;height:auto;max-width:100%;object-fit:contain;margin-inline:auto;transform:none}
+#caseRoot .split-media .shot{width:100%;background:transparent}
+#caseRoot .split-media .shot:hover img{transform:none}
+@media(max-width:900px){#caseRoot.showcase-case .split{grid-template-columns:1fr}}

@@ -1,8 +1,27 @@
 (function(){
   function jumpTop(){ var d=document.documentElement, prev=d.style.scrollBehavior; d.style.scrollBehavior='auto'; window.scrollTo(0,0); d.scrollTop=0; document.body.scrollTop=0; requestAnimationFrame(function(){ window.scrollTo(0,0); d.style.scrollBehavior=prev; }); }
   var views={home:document.getElementById('view-home'),all:document.getElementById('view-all'),more:document.getElementById('view-more'),case:document.getElementById('view-case')};
-  var nav=document.getElementById('nav');
+  var nav=document.getElementById('nav'),anchorJob=0;
+  function cancelAnchorScroll(){anchorJob++;}
+  ['wheel','touchstart','pointerdown','keydown'].forEach(function(event){window.addEventListener(event,cancelAnchorScroll,{passive:true});});
+  function scrollToSection(el,smooth){
+    var job=++anchorJob,heading=el.querySelector('.section-title')||el;
+    smooth=smooth&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function finish(){
+      if(job!==anchorJob||!views.home.classList.contains('is-on')) return;
+      var delta=heading.getBoundingClientRect().top-nav.getBoundingClientRect().bottom-24;
+      if(Math.abs(delta)>1) window.scrollTo({top:Math.max(0,window.scrollY+delta),behavior:'instant'});
+    }
+    requestAnimationFrame(function(){
+      if(job!==anchorJob) return;
+      var offset=0;for(var node=heading;node;node=node.offsetParent) offset+=node.offsetTop;
+      window.scrollTo({top:Math.max(0,offset-nav.getBoundingClientRect().bottom-24),behavior:smooth?'smooth':'instant'});
+      setTimeout(finish,550);setTimeout(finish,1050);
+      if(document.fonts) document.fonts.ready.then(function(){setTimeout(finish,1100);});
+    });
+  }
   function show(name,hash){
+    cancelAnchorScroll();
     if(name!=='case') closeLb();
     if(name!=='case') document.title=(name==='all'?'Projects':name==='more'?'All projects':'Product Designer')+' · Daniel Adamus';
     for(var k in views) views[k].classList.toggle('is-on',k===name);
@@ -10,12 +29,7 @@
     if(name==='case'){ jumpTop(); setTimeout(jumpTop,60); }
     document.getElementById('backFab').classList.toggle('is-on',false);
     document.querySelectorAll('.menu a').forEach(function(a){a.classList.toggle('is-active',(name==='all'||name==='more'||name==='case')&&a.dataset.sec==='projects')});
-    if(hash){ var el=document.querySelector(hash); if(el){ requestAnimationFrame(function(){
-      var heading=el.querySelector('.section-title')||el;
-      var offset=0;for(var node=heading;node;node=node.offsetParent) offset+=node.offsetTop;
-      var top=offset-nav.getBoundingClientRect().bottom-24;
-      window.scrollTo({top:Math.max(0,top),behavior:name==='home'&&hash!=='#home'?'smooth':'instant'});
-    }); } }
+    if(hash){var el=document.querySelector(hash);if(el) scrollToSection(el,name==='home'&&hash!=='#home');}
     observeAll();
   }
   function route(){
@@ -29,7 +43,8 @@
     var a=e.target.closest('[data-go]'); if(!a) return;
     e.preventDefault();
     var target=a.getAttribute('href');
-    if(location.hash===target){ route(); } else { location.hash=target; }
+    if(location.hash!==target) history.pushState(null,'',target);
+    route();
   });
   if('scrollRestoration' in history) history.scrollRestoration='manual';
   /* keep the page pinned to the top while it settles (no hash) */
@@ -119,7 +134,7 @@
   var LB={list:[],i:0,trigger:null,descriptions:[]};
   function openLb(list,i,descriptions){
     LB.list=list; LB.i=i; LB.trigger=document.activeElement;
-    LB.descriptions=descriptions || Array.from(document.querySelectorAll('#caseRoot .case-body figure img,#caseRoot .showcase-gallery img')).map(function(img){return img.alt;});
+    LB.descriptions=descriptions || Array.from(document.querySelectorAll('#caseRoot .case-body figure img,#caseRoot .split-media img')).map(function(img){return img.alt;});
     showLb(); document.getElementById('lb').classList.add('is-on'); document.body.style.overflow='hidden';
     document.getElementById('lbX').focus();
   }
@@ -173,8 +188,10 @@
       body='<div class="case-lead">'+back+'<div class="case-hero"><img src="'+im(c.hero)+'" alt="'+esc(c.title)+' — project overview"></div></div>'+
         '<div class="case-head">'+title+d.pills+'<div class="case-body intro-lead">'+blocks(intro)+'</div></div>'+
         '<div class="roles">'+d.tiles+'</div>'+
-        (rest.length?'<div class="case-body showcase-copy">'+blocks(rest)+'</div>':'')+
-        '<div class="showcase-gallery">'+c.gallery.map(function(g){return caseFigure({v:g},false);}).join('')+'</div>';
+        '<div class="split-track" id="splitTrack"><div class="split-stage"><div class="split">'+
+        '<div class="split-col"><div class="split-in split-media" id="spM">'+c.gallery.map(function(g){return caseFigure({v:g},true);}).join('')+'</div></div>'+
+        '<div class="split-col"><div class="split-in split-text" id="spT">'+(rest.length?'<div class="case-body">'+blocks(rest)+'</div>':'')+'</div></div>'+
+        '</div></div></div>';
     }
     var pool=isPriv?VAULT.cards:ORDER;
     var more=pool.filter(function(card){return card.slug!==slug;}).slice(0,3);

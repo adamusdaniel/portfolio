@@ -5,7 +5,7 @@
 .owner .expiry-option{display:flex;gap:10px;align-items:center}.owner .expiry-option input{width:20px;height:20px;flex-shrink:0}
 
 .grant-table-wrap{max-width:100%;overflow-x:auto;margin-top:24px;border:1px solid var(--line);border-radius:16px;background:var(--bg-2)}
-.grant-table{width:100%;min-width:1120px;border-collapse:separate;border-spacing:0;text-align:left;font-size:14px}
+.grant-table{width:100%;min-width:1000px;border-collapse:separate;border-spacing:0;text-align:left;font-size:14px}
 .grant-table caption{text-align:left;padding:20px;font-size:20px;font-weight:700}
 .grant-table th,.grant-table td{padding:16px;vertical-align:middle;border-top:1px solid rgb(255 255 255 / 14%)}
 .grant-table thead th{color:var(--text-2);font-weight:600;background:var(--bg-1);white-space:nowrap}
@@ -20,3 +20,9 @@
 .grant-status{display:inline-block;border-radius:20px;padding:5px 9px;white-space:nowrap;font-size:12px;font-weight:700}
 .grant-status.is-active{color:#c1edcf;background:#234431}.grant-status.is-inactive{color:var(--text-2);background:var(--bg-1)}
 @media(max-width:640px){.grant-table th,.grant-table td{padding:12px}.grant-action{padding:9px;font-size:13px}.grant-table td:last-child,.grant-table thead th:last-child{position:static;box-shadow:none}}
+
+#grants{position:relative}
+.grant-table-loader{position:absolute;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;gap:12px;background:rgb(43 40 40 / 90%);border-radius:16px;color:var(--text);font-weight:600;cursor:wait;pointer-events:auto}
+.grant-spinner{width:24px;height:24px;border:3px solid rgb(255 255 255 / 25%);border-top-color:var(--text);border-radius:50%;animation:grant-spin .8s linear infinite}
+@keyframes grant-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.grant-spinner{animation:none}}

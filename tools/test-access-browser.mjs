@@ -46,8 +46,8 @@ try {
   assert(!await owner.evaluate(()=>document.documentElement.scrollWidth>innerWidth), 'Owner overflow at '+width);
  }
  if(process.env.PORTFOLIO_TEST_SCREENSHOTS){await mkdir('work',{recursive:true});await owner.locator('.grant-table').scrollIntoViewIfNeeded();await owner.screenshot({path:'work/owner-table.png'});}
- assert.equal(await owner.locator('.grant-table tbody tr').count(),1);assert.equal(await owner.locator('.grant-table thead th').count(),7);
- assert(await owner.getByText('Nieużyte',{exact:true}).isVisible());assert(await owner.getByText('Bez daty wygaśnięcia',{exact:true}).isVisible());
+ assert.equal(await owner.locator('.grant-table tbody tr').count(),1);assert.equal(await owner.locator('.grant-table thead th').count(),6);
+ assert(await owner.getByText('Nie było użyte',{exact:true}).isVisible());assert(await owner.getByText('Bez daty wygaśnięcia',{exact:true}).isVisible());
  const bundle=path.join(temp,'fixture.json');await writeFile(bundle,JSON.stringify(fixture('data:image/png;base64,'+png.toString('base64'))));
  await owner.locator('summary').click();await owner.locator('#bundle').setInputFiles(bundle);await owner.locator('#upload button').click();await owner.getByText(/^Projekty wgrane\./).waitFor();
  const recipientContext=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:375,height:900}});const recipient=await recipientContext.newPage();recipient.on('pageerror',e=>errors.push(e.message));
@@ -70,8 +70,10 @@ try {
    await recipient.locator('#caseRoot h1').waitFor();
    assert(!await recipient.evaluate(()=>document.documentElement.scrollWidth>innerWidth),slug+' overflow '+width);
    if(['gratefulme','bezkartek','swissprive','krainazdrowia'].includes(slug)) {
-    assert.equal(await recipient.locator('#splitTrack').count(),0);
-    assert((await recipient.locator('.showcase-gallery').boundingBox()).width>=width*0.85);
+    assert.equal(await recipient.locator('#splitTrack').count(),1);
+    assert((await recipient.locator('#splitTrack').boundingBox()).width>=width*0.85);
+    assert.equal(await recipient.locator('#splitTrack .split-col').count(),2);
+    assert.equal(await recipient.locator('.split-stage').evaluate(e=>getComputedStyle(e).position),width>900?'sticky':'static');
    }
    for(const image of await recipient.locator('#caseRoot .case-hero img,#caseRoot figure img').all()) {
     await image.scrollIntoViewIfNeeded();await image.evaluate(i=>i.decode());
@@ -80,12 +82,30 @@ try {
     assert(size.w<=size.nw+1,slug+' image enlarged at '+width);
     assert(Math.abs(size.w/size.h-size.nw/size.nh)<0.015,slug+' distorted image at '+width);
    }
+   if(width>900 && slug==='gratefulme') {
+    const geometry=await recipient.evaluate(()=>{
+      document.querySelectorAll('.split-col').forEach(e=>e.scrollTop=0);
+      const track=document.getElementById('splitTrack'),stage=track.querySelector('.split-stage');
+      const h=stage.clientHeight,top=parseFloat(getComputedStyle(stage).top);
+      return {start:track.getBoundingClientRect().top+scrollY-top,length:parseFloat(track.style.height)-h,media:Math.max(0,document.getElementById('spM').scrollHeight-h),text:Math.max(0,document.getElementById('spT').scrollHeight-h)};
+    });
+    for(const fraction of [0,.5,1,0]) {
+      await recipient.evaluate(y=>window.scrollTo({top:y,behavior:'instant'}),geometry.start+geometry.length*fraction);
+      await recipient.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      const positions=await recipient.evaluate(()=>({media:-new DOMMatrix(getComputedStyle(document.getElementById('spM')).transform).m42,text:-new DOMMatrix(getComputedStyle(document.getElementById('spT')).transform).m42}));
+      assert(positions.media>=-2&&positions.media<=geometry.media+2);
+      assert(positions.text>=-2&&positions.text<=geometry.text+2);
+      if(fraction===0){assert(positions.media<2);assert(positions.text<2);}
+      if(fraction===1){assert(Math.abs(positions.media-geometry.media)<2);assert(Math.abs(positions.text-geometry.text)<2);}
+      if(fraction===.5) assert(positions.media>0);
+    }
+   }
    if(process.env.PORTFOLIO_TEST_SCREENSHOTS && width===1440 && slug==='gratefulme'){await recipient.evaluate(()=>window.scrollTo(0,0));await recipient.screenshot({path:'work/gratefulme-wide.png'});}
   }
   console.log('PASS private archive: 8 cases and protected images at '+width+'px');
  }
  await recipient.goto(base+'/#private/test-only');await recipient.locator('#caseRoot h1').waitFor();
- await owner.locator('#refresh').click();await owner.getByText('Użyte',{exact:true}).waitFor();
+ await owner.locator('#refresh').click();await owner.locator('.grant-table tbody tr td').nth(3).filter({hasText:/\d{2}:\d{2}/}).waitFor();
  owner.on('dialog',d=>d.accept());await owner.getByRole('button',{name:/^Resetuj hasło:/}).click();await owner.locator('#resetPassword').fill(password);await owner.getByRole('button',{name:'Zapisz nowe hasło',exact:true}).click();await owner.locator('#resetError').filter({hasText:'To hasło było już'}).waitFor();await owner.locator('#resetPassword').fill('My reset test phrase!');await owner.getByRole('button',{name:'Zapisz nowe hasło',exact:true}).click();await owner.getByText('Hasło zostało zresetowane.',{exact:true}).waitFor();
  const resetPassword=await owner.locator('#newPassword').inputValue();assert.notEqual(resetPassword,password);
  assert.equal((await recipient.request.get(base+src)).status(),401);
@@ -97,7 +117,26 @@ try {
  await recipient.evaluate(()=>window.dispatchEvent(new Event('focus')));await recipient.locator('#moreLocked').waitFor();
  owner.removeAllListeners('dialog');owner.once('dialog',d=>d.dismiss());
  await owner.getByRole('button',{name:/^Usuń:/}).click();assert.equal(await owner.locator('.grant-table tbody tr').count(),1);
- owner.once('dialog',d=>d.accept());await owner.getByRole('button',{name:/^Usuń:/}).click();
+ let releaseDelete,failDelete=true;
+ await owner.route('**/api/owner/grants/*/delete',async route=>{
+  await new Promise(resolve=>{releaseDelete=resolve;});
+  if(failDelete) await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Test: spróbuj ponownie.'})});
+  else await route.continue();
+ });
+ for(const fail of [true,false]) {
+  failDelete=fail;releaseDelete=null;
+  owner.once('dialog',d=>d.accept());await owner.getByRole('button',{name:/^Usuń:/}).click();
+  await owner.locator('.grant-table-loader').waitFor();
+  assert.equal(await owner.locator('#grants').getAttribute('aria-busy'),'true');
+  assert(await owner.locator('.grant-table-wrap').evaluate(e=>e.inert));
+  assert(await owner.getByRole('button',{name:/^Usuń:/,includeHidden:true}).isDisabled());
+  assert(releaseDelete);releaseDelete();
+  if(fail) {
+   await owner.getByText('Test: spróbuj ponownie.',{exact:true}).waitFor();
+   assert.equal(await owner.locator('.grant-table-loader').count(),0);assert.equal(await owner.locator('.grant-table tbody tr').count(),1);
+   assert(!await owner.locator('.grant-table-wrap').evaluate(e=>e.inert));
+  }
+ }
  await owner.getByText('Wpis został usunięty.',{exact:true}).waitFor();assert.equal(await owner.locator('.grant-table tbody tr').count(),0);
  await owner.getByText('Brak dostępów. Utwórz pierwszy powyżej.',{exact:true}).waitFor();
  await owner.locator('#logout').click();await owner.locator('#login').waitFor();assert.equal((await owner.request.get(base+'/api/owner/grants')).status(),401);
