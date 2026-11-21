@@ -13,6 +13,7 @@ export class MemoryStore {
     this.entries.set(key,{data:structuredClone(data),metadata:options.metadata||{},etag});
     return {modified:true,etag};
   }
+  async delete(key) { this.entries.delete(key); }
   async list({prefix}) {return {blobs:[...this.entries.keys()].filter(k=>k.startsWith(prefix)).map(key=>({key}))};}
 }
 export function setup(store=new MemoryStore(),origin='https://portfolio.test',options={}) {

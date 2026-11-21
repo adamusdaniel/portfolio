@@ -42,6 +42,8 @@ async function lifecycle(s,custom=false) {
  const short=await create(s,o,'Short-lived',1/24), shortCookie=s.cookie(await login(s,short.password));s.advance(3600001);
  assert.equal((await login(s,short.password)).status,401);
  for(const endpoint of ['private/content',url]) assert.equal((await s.request(endpoint,{cookie:shortCookie})).status,401);
+ const freshOwner=await owner(s);assert.equal((await s.request(`owner/grants/${b.grant.id}/delete`,{cookie:freshOwner,data:{version:b.grant.version}})).status,200);
+ assert.equal((await login(s,b.password)).status,401);assert.equal(await s.store.get(`used-${b.grant.id}`,{type:'json'}),null);
 }
 test('full lifecycle: password, expiry, reset isolation, revoke, first use, API/images and roles',async()=>lifecycle(setup()));
 test('actual Netlify Blobs SDK against local emulator: persisted lifecycle',async()=>{
@@ -149,4 +151,37 @@ test('non-expiring access: survives time passage, sessions remain short, reset a
  assert.equal((await login(s,updated.password)).status,401);
  assert.equal((await s.request('private/content',{cookie:active})).status,401);
  assert.equal((await s.request('owner/grants',{cookie:o,data:{label:'Invalid',noExpiry:'true'}})).status,400);
+});
+
+test('deletion: owner only, both password formats invalidated, data removed, other recipients preserved',async()=>{
+ const s=setup(),o=await owner(s);
+ for(const chosen of [undefined,'Chosen deletion phrase!']) {
+  const a=await create(s,o,'Delete this label',undefined,chosen),b=await create(s,o,'Keep this label');
+  const cookie=s.cookie(await login(s,a.password));
+  const url=await image(s,o);
+  const endpoint=`owner/grants/${a.grant.id}/delete`;
+  assert.equal((await s.request(endpoint,{data:{version:a.grant.version}})).status,401);
+  assert.equal((await s.request(endpoint,{cookie,data:{version:a.grant.version}})).status,401);
+  assert.equal((await s.request(endpoint,{cookie:o,data:{version:'stale'}})).status,409);
+  assert.equal((await login(s,a.password)).status,200);
+  assert.equal((await s.request(endpoint,{cookie:o,data:{version:a.grant.version}})).status,200);
+  assert.equal((await login(s,a.password)).status,401);
+  for(const path of ['private/content','access/session',url]) assert.equal((await s.request(path,{cookie})).status,401);
+  const list=await (await s.request('owner/grants',{cookie:o})).json();assert(!list.grants.some(g=>g.id===a.grant.id));
+  const tombstone=await s.store.get(`grants-${a.grant.id}`);assert.equal(tombstone.deleted,true);assert(!tombstone.label);assert(!tombstone.passwordHash);
+  assert.equal(await s.store.get(`used-${a.grant.id}`),null);
+  assert.equal((await login(s,b.password)).status,200);
+  assert.equal((await s.request(endpoint,{cookie:o,data:{version:a.grant.version}})).status,200);
+  assert.equal((await s.request(`owner/grants/${a.grant.id}/reset`,{cookie:o,data:{version:a.grant.version,password:'No resurrection phrase!'}})).status,404);
+ }
+});
+test('concurrent reset and deletion cannot resurrect deleted access',async()=>{
+ const s=setup(),o=await owner(s),a=await create(s,o,'Concurrency',undefined,'Delete race old phrase!');
+ const responses=await Promise.all([
+  s.request(`owner/grants/${a.grant.id}/delete`,{cookie:o,data:{version:a.grant.version}}),
+  s.request(`owner/grants/${a.grant.id}/reset`,{cookie:o,data:{version:a.grant.version,password:'Delete race new phrase!'}})
+ ]);
+ assert.equal(responses[0].status,200);assert([404,409].includes(responses[1].status));
+ assert.equal((await login(s,a.password)).status,401);assert.equal((await login(s,'Delete race new phrase!')).status,401);
+ assert.equal((await s.store.get(`grants-${a.grant.id}`)).deleted,true);
 });

@@ -10,7 +10,12 @@
     if(name==='case'){ jumpTop(); setTimeout(jumpTop,60); }
     document.getElementById('backFab').classList.toggle('is-on',false);
     document.querySelectorAll('.menu a').forEach(function(a){a.classList.toggle('is-active',(name==='all'||name==='more'||name==='case')&&a.dataset.sec==='projects')});
-    if(hash){ var el=document.querySelector(hash); if(el){ requestAnimationFrame(function(){ el.scrollIntoView({behavior: name==='home'&&hash!=='#home'?'smooth':'instant',block:'start'}); }); } }
+    if(hash){ var el=document.querySelector(hash); if(el){ requestAnimationFrame(function(){
+      var heading=el.querySelector('.section-title')||el;
+      var offset=0;for(var node=heading;node;node=node.offsetParent) offset+=node.offsetTop;
+      var top=offset-nav.getBoundingClientRect().bottom-24;
+      window.scrollTo({top:Math.max(0,top),behavior:name==='home'&&hash!=='#home'?'smooth':'instant'});
+    }); } }
     observeAll();
   }
   function route(){
@@ -59,7 +64,7 @@
   function caseFigure(b,shot){
     var meta=Object.assign({},PORTFOLIO_PROJECTS.media[b.v]||{},b);
     var cls=shot?'shot':'case-figure'+(b.mobile?' tauron-mobile is-mobile':(b.layout==='wide'||WIDE_CASE_IMAGES.has(b.v.replace(/^private\/archive\//,''))?' is-wide':''));
-    return '<figure class="'+cls+'"><img src="'+im(b.v)+'" alt="'+esc(meta.alt||'Project interface')+'"'+(meta.width?' width="'+meta.width+'" height="'+meta.height+'"':'')+' loading="lazy">'+(meta.caption?'<figcaption>'+esc(meta.caption)+'</figcaption>':'')+'</figure>';
+    return '<figure class="'+cls+'" data-image-key="'+esc(b.v)+'"><img src="'+im(b.v)+'" alt="'+esc(meta.alt||'Project interface')+'"'+(meta.width?' width="'+meta.width+'" height="'+meta.height+'"':'')+' loading="lazy">'+(meta.caption?'<figcaption>'+esc(meta.caption)+'</figcaption>':'')+'</figure>';
   }
   function block(b){
     return (function(){
@@ -114,7 +119,7 @@
   var LB={list:[],i:0,trigger:null,descriptions:[]};
   function openLb(list,i,descriptions){
     LB.list=list; LB.i=i; LB.trigger=document.activeElement;
-    LB.descriptions=descriptions || Array.from(document.querySelectorAll('#caseRoot .case-body figure img,#caseRoot .split-media .shot img')).map(function(img){return img.alt;});
+    LB.descriptions=descriptions || Array.from(document.querySelectorAll('#caseRoot .case-body figure img,#caseRoot .showcase-gallery img')).map(function(img){return img.alt;});
     showLb(); document.getElementById('lb').classList.add('is-on'); document.body.style.overflow='hidden';
     document.getElementById('lbX').focus();
   }
@@ -141,6 +146,7 @@
     var c=CASES[slug], root=document.getElementById('caseRoot');
     root.classList.toggle('tauron-case',slug==='tauron-search');
     root.classList.toggle('text-case',!!c && c.type==='long');
+    root.classList.toggle('showcase-case',!!c && c.type==='showcase');
     if(!c){ root.innerHTML='<p>Project not found.</p>'; return; }
     var i=Math.max(0,ORDER.map(function(o){return o.slug}).indexOf(slug));
     var prev=ORDER[(i-1+ORDER.length)%ORDER.length], next=ORDER[(i+1)%ORDER.length];
@@ -167,10 +173,8 @@
       body='<div class="case-lead">'+back+'<div class="case-hero"><img src="'+im(c.hero)+'" alt="'+esc(c.title)+' — project overview"></div></div>'+
         '<div class="case-head">'+title+d.pills+'<div class="case-body intro-lead">'+blocks(intro)+'</div></div>'+
         '<div class="roles">'+d.tiles+'</div>'+
-        '<div class="split-track" id="splitTrack"><div class="split-stage"><div class="split">'+
-        '<div class="split-col"><div class="split-in split-media" id="spM">'+c.gallery.map(function(g){return caseFigure({v:g},true);}).join('')+'</div></div>'+
-        '<div class="split-col"><div class="split-in split-text" id="spT">'+(rest.length?'<div class="case-body">'+blocks(rest)+'</div>':'')+'</div></div>'+
-        '</div></div></div>';
+        (rest.length?'<div class="case-body showcase-copy">'+blocks(rest)+'</div>':'')+
+        '<div class="showcase-gallery">'+c.gallery.map(function(g){return caseFigure({v:g},false);}).join('')+'</div>';
     }
     var pool=isPriv?VAULT.cards:ORDER;
     var more=pool.filter(function(card){return card.slug!==slug;}).slice(0,3);
@@ -190,8 +194,14 @@
       hero.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();enlargeHero();}});
     }
     /* lightbox on hero + figures */
-    var k=0;
-    root.querySelectorAll('.case-body figure, .split-media .shot').forEach(function(el){ var idx=k++; el.addEventListener('click',function(){ openLb(imgs,idx); }); { el.tabIndex=0; el.setAttribute('role','button'); el.setAttribute('aria-label','Enlarge project image'); el.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openLb(imgs,idx); } }); } });
+    var figures=Array.from(root.querySelectorAll('figure[data-image-key]'));
+    var figureKeys=figures.map(function(el){return el.getAttribute('data-image-key');});
+    var figureAlts=figures.map(function(el){return el.querySelector('img').alt;});
+    figures.forEach(function(el,idx){
+      var enlarge=function(){openLb(figureKeys,idx,figureAlts);};
+      el.addEventListener('click',enlarge);el.tabIndex=0;el.setAttribute('role','button');el.setAttribute('aria-label','Enlarge project image');
+      el.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();enlarge();}});
+    });
     document.title=c.title.replace(/<[^>]+>/g,'')+' · Daniel Adamus';
     setTimeout(checkReveal,50);
   }

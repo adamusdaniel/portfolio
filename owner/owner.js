@@ -20,30 +20,46 @@
   function render() {
     $('grants').replaceChildren();
     if (!grants.length) $('grants').append(element('p','Brak dostępów. Utwórz pierwszy powyżej.'));
+    if(!grants.length) return;
+    const wrapper=element('div',''); wrapper.className='grant-table-wrap';wrapper.tabIndex=0;
+    wrapper.setAttribute('role','region');wrapper.setAttribute('aria-label','Tabela dostępów — przewijana poziomo na małych ekranach');
+    const table=element('table','');table.className='grant-table';
+    const caption=element('caption','Dostępy do prywatnych projektów');table.append(caption);
+    const head=document.createElement('thead'),heading=document.createElement('tr');
+    for(const label of ['Osoba / firma','Stan','Utworzono','Ważność','Użycie hasła','Pierwsze użycie','Akcje']) {
+      const th=element('th',label);th.scope='col';heading.append(th);
+    }
+    head.append(heading);table.append(head);const body=document.createElement('tbody');
     for (const g of grants) {
-      const card=element('article',''); card.className='grant';
-      card.append(element('h2',g.label));
-      const dl=document.createElement('dl');
-      for (const [label,value] of [['Stan',g.revoked?'Wyłączony':expired(g)?'Wygasły':'Aktywny'],['Ważny do',g.expiresAt===null?'Bez daty wygaśnięcia':date(g.expiresAt)],['Użycie hasła',g.firstUsedAt?'Użyte':'Nieużyte'],['Pierwsze użycie',date(g.firstUsedAt)]]) dl.append(element('dt',label),element('dd',value));
-      card.append(dl);
-      const actions=element('div',''); actions.className='owner-actions';
-      for (const [action,label] of [['reset','Resetuj hasło'],['revoke','Wyłącz dostęp']]) {
-        const b=element('button',label); b.className='btn ghost'; b.disabled=g.revoked||expired(g);
-        b.addEventListener('click',()=>{
+      const row=document.createElement('tr');
+      const name=element('th',g.label);name.scope='row';row.append(name);
+      const state=g.revoked?'Wyłączony':expired(g)?'Wygasły':'Aktywny';
+      const stateCell=document.createElement('td'),badge=element('span',state);
+      badge.className='grant-status '+(state==='Aktywny'?'is-active':'is-inactive');stateCell.append(badge);row.append(stateCell);
+      for(const value of [date(g.createdAt),g.expiresAt===null?'Bez daty wygaśnięcia':date(g.expiresAt),g.firstUsedAt?'Użyte':'Nieużyte',date(g.firstUsedAt)]) row.append(element('td',value));
+      const actionCell=document.createElement('td');actionCell.className='grant-actions-cell';
+      const actions=element('div','');actions.className='grant-actions';
+      for(const [action,label] of [['reset','Resetuj hasło'],['revoke','Wyłącz'],['delete','Usuń']]) {
+        const button=element('button',label);button.type='button';button.className='grant-action'+(action==='delete'?' is-danger':'');
+        button.disabled=action!=='delete'&&(g.revoked||expired(g));
+        button.setAttribute('aria-label',label+': '+g.label);
+        button.addEventListener('click',()=>{
           if(action==='reset') {
-            $('resetError').textContent=''; resetGrant=g; $('resetLabel').textContent=g.label; $('resetPassword').value='';
-            $('resetDialog').showModal(); $('resetPassword').focus(); return;
+            $('resetError').textContent='';resetGrant=g;$('resetLabel').textContent=g.label;$('resetPassword').value='';
+            $('resetDialog').showModal();$('resetPassword').focus();return;
           }
           run(async()=>{
-          if (!confirm(`${label}: ${g.label}? ${action==='reset'?'Poprzednie hasło i sesje przestaną działać.':'Dostęp przestanie działać natychmiast.'}`)) return;
-          hideSecret();
-          const result=await api(`grants/${g.id}/${action}`,{version:g.version});
-          if(result.password) reveal(result.password);
-          await load(); $('notice').textContent=action==='reset'?'Hasło zostało zresetowane.':'Dostęp został wyłączony.';
-        }); }); actions.append(b);
+            const message=action==='delete'?`Usunąć wpis „${g.label}”? Jego hasło i otwarte sesje przestaną działać. Tej operacji nie można cofnąć.`:`Wyłączyć dostęp „${g.label}”? Hasło i otwarte sesje przestaną działać.`;
+            if(!confirm(message)) return;
+            hideSecret();await api(`grants/${g.id}/${action}`,{version:g.version});await load();
+            $('notice').textContent=action==='delete'?'Wpis został usunięty.':'Dostęp został wyłączony.';
+          });
+        });
+        actions.append(button);
       }
-      card.append(actions); $('grants').append(card);
+      actionCell.append(actions);row.append(actionCell);body.append(row);
     }
+    table.append(body);wrapper.append(table);$('grants').append(wrapper);
   }
   function reveal(password) { $('newPassword').value=password; $('secretBox').hidden=false; $('newPassword').focus(); }
   async function load() { grants=(await api('grants')).grants; $('login').hidden=true; $('panel').hidden=false; render(); }

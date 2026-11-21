@@ -47,6 +47,9 @@ async function checkCase(page, slug) {
   for (const image of await page.locator('#caseRoot .case-hero img,#caseRoot figure img').all()) {
     await image.scrollIntoViewIfNeeded();
     await image.evaluate(i => i.decode());
+    const size=await image.evaluate(i=>({width:i.getBoundingClientRect().width,height:i.getBoundingClientRect().height,nw:i.naturalWidth,nh:i.naturalHeight}));
+    assert(size.width<=size.nw+1,slug+' image enlarged');
+    assert(Math.abs(size.width/size.height-size.nw/size.nh)<0.015,slug+' image distorted');
   }
   await page.goto(`${base}/#home`);
   assert.match(await page.title(), /^Product Designer/);
@@ -69,13 +72,22 @@ async function checkCase(page, slug) {
       assert.equal(new URL(page.url()).hash,'#projects');
       assert(await page.locator('#view-home').evaluate(e=>e.classList.contains('is-on')));
       await page.waitForTimeout(800);
-      assert(Math.abs(await page.locator('#projects').evaluate(e=>e.getBoundingClientRect().top))<180);
+      for(const id of ['projects','about','skills','contact']) {
+        await page.evaluate(id=>{location.hash='#'+id;},id);
+        await page.waitForTimeout(900);
+        const geometry=await page.evaluate(id=>({heading:document.querySelector('#'+id+' .section-title').getBoundingClientRect().top,nav:document.getElementById('nav').getBoundingClientRect().bottom}),id);
+        assert(geometry.heading>=geometry.nav+20,`${id} header overlaps menu or lacks margin at ${width}px: ${JSON.stringify(geometry)}`);
+      }
+      await page.goto(`${base}/#project/buchfix`);await page.locator('#caseRoot h1').waitFor();
+      await page.locator('.menu [data-sec="projects"]').click();await page.waitForTimeout(900);
+      assert(await page.locator('#view-home').evaluate(e=>e.classList.contains('is-on')));
+      assert(await page.evaluate(()=>document.querySelector('#projects .section-title').getBoundingClientRect().top>=document.getElementById('nav').getBoundingClientRect().bottom+20));
       await page.goto(`${base}/#all-projects`);
       await page.locator('#moreLocked').waitFor();
       assert.equal(await page.locator('#more-grid .card').count(),0);
       await page.goto(`${base}/#project/tauron-search`);
       await page.locator('#moreLocked').waitFor();
-      assert.equal(await page.locator('#caseRoot h1').count(),0);
+      assert(await page.locator('#view-case').isHidden());
       await page.goto(`${base}/#home`);
       const slugs = await page.locator('#featured .card').evaluateAll(cards => cards.map(c => c.getAttribute('href').split('/')[1]));
       assert.deepEqual(slugs,['buchfix','loyalty','niewidomi']);

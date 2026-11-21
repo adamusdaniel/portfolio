@@ -1,7 +1,7 @@
 // Local HTTPS integration, with a transient test owner and test-only content.
 import {chromium} from 'playwright';
 import https from 'node:https';
-import {readFile,mkdtemp,writeFile,rm} from 'node:fs/promises';
+import {readFile,mkdtemp,writeFile,rm,mkdir} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import path from 'node:path';
 import os from 'node:os';
@@ -45,6 +45,8 @@ try {
   await owner.setViewportSize({width,height:950});
   assert(!await owner.evaluate(()=>document.documentElement.scrollWidth>innerWidth), 'Owner overflow at '+width);
  }
+ if(process.env.PORTFOLIO_TEST_SCREENSHOTS){await mkdir('work',{recursive:true});await owner.locator('.grant-table').scrollIntoViewIfNeeded();await owner.screenshot({path:'work/owner-table.png'});}
+ assert.equal(await owner.locator('.grant-table tbody tr').count(),1);assert.equal(await owner.locator('.grant-table thead th').count(),7);
  assert(await owner.getByText('Nieużyte',{exact:true}).isVisible());assert(await owner.getByText('Bez daty wygaśnięcia',{exact:true}).isVisible());
  const bundle=path.join(temp,'fixture.json');await writeFile(bundle,JSON.stringify(fixture('data:image/png;base64,'+png.toString('base64'))));
  await owner.locator('summary').click();await owner.locator('#bundle').setInputFiles(bundle);await owner.locator('#upload button').click();await owner.getByText(/^Projekty wgrane\./).waitFor();
@@ -67,24 +69,37 @@ try {
    await recipient.goto(base+'/#private/'+slug);
    await recipient.locator('#caseRoot h1').waitFor();
    assert(!await recipient.evaluate(()=>document.documentElement.scrollWidth>innerWidth),slug+' overflow '+width);
+   if(['gratefulme','bezkartek','swissprive','krainazdrowia'].includes(slug)) {
+    assert.equal(await recipient.locator('#splitTrack').count(),0);
+    assert((await recipient.locator('.showcase-gallery').boundingBox()).width>=width*0.85);
+   }
    for(const image of await recipient.locator('#caseRoot .case-hero img,#caseRoot figure img').all()) {
     await image.scrollIntoViewIfNeeded();await image.evaluate(i=>i.decode());
     assert((await image.getAttribute('src')).startsWith('/api/private/images/'));
+    const size=await image.evaluate(i=>({w:i.getBoundingClientRect().width,h:i.getBoundingClientRect().height,nw:i.naturalWidth,nh:i.naturalHeight}));
+    assert(size.w<=size.nw+1,slug+' image enlarged at '+width);
+    assert(Math.abs(size.w/size.h-size.nw/size.nh)<0.015,slug+' distorted image at '+width);
    }
+   if(process.env.PORTFOLIO_TEST_SCREENSHOTS && width===1440 && slug==='gratefulme'){await recipient.evaluate(()=>window.scrollTo(0,0));await recipient.screenshot({path:'work/gratefulme-wide.png'});}
   }
   console.log('PASS private archive: 8 cases and protected images at '+width+'px');
  }
  await recipient.goto(base+'/#private/test-only');await recipient.locator('#caseRoot h1').waitFor();
  await owner.locator('#refresh').click();await owner.getByText('Użyte',{exact:true}).waitFor();
- owner.on('dialog',d=>d.accept());await owner.getByRole('button',{name:'Resetuj hasło',exact:true}).click();await owner.locator('#resetPassword').fill(password);await owner.getByRole('button',{name:'Zapisz nowe hasło',exact:true}).click();await owner.locator('#resetError').filter({hasText:'To hasło było już'}).waitFor();await owner.locator('#resetPassword').fill('My reset test phrase!');await owner.getByRole('button',{name:'Zapisz nowe hasło',exact:true}).click();await owner.getByText('Hasło zostało zresetowane.',{exact:true}).waitFor();
+ owner.on('dialog',d=>d.accept());await owner.getByRole('button',{name:/^Resetuj hasło:/}).click();await owner.locator('#resetPassword').fill(password);await owner.getByRole('button',{name:'Zapisz nowe hasło',exact:true}).click();await owner.locator('#resetError').filter({hasText:'To hasło było już'}).waitFor();await owner.locator('#resetPassword').fill('My reset test phrase!');await owner.getByRole('button',{name:'Zapisz nowe hasło',exact:true}).click();await owner.getByText('Hasło zostało zresetowane.',{exact:true}).waitFor();
  const resetPassword=await owner.locator('#newPassword').inputValue();assert.notEqual(resetPassword,password);
  assert.equal((await recipient.request.get(base+src)).status(),401);
  await recipient.reload();await recipient.locator('#lockPass').waitFor();
  await recipient.locator('#lockPass').fill(password);await recipient.locator('#lockBtn').click();await recipient.locator('#lockErr').filter({hasText:'Invalid password'}).waitFor();
  await recipient.locator('#lockPass').fill(resetPassword);await recipient.locator('#lockBtn').click();await recipient.locator('#caseRoot h1').waitFor();
- await owner.getByRole('button',{name:'Wyłącz dostęp',exact:true}).click();await owner.getByText('Dostęp został wyłączony.',{exact:true}).waitFor();
+ await owner.getByRole('button',{name:/^Wyłącz:/}).click();await owner.getByText('Dostęp został wyłączony.',{exact:true}).waitFor();
  assert.equal((await recipient.request.get(base+'/api/private/content')).status(),401);
  await recipient.evaluate(()=>window.dispatchEvent(new Event('focus')));await recipient.locator('#moreLocked').waitFor();
+ owner.removeAllListeners('dialog');owner.once('dialog',d=>d.dismiss());
+ await owner.getByRole('button',{name:/^Usuń:/}).click();assert.equal(await owner.locator('.grant-table tbody tr').count(),1);
+ owner.once('dialog',d=>d.accept());await owner.getByRole('button',{name:/^Usuń:/}).click();
+ await owner.getByText('Wpis został usunięty.',{exact:true}).waitFor();assert.equal(await owner.locator('.grant-table tbody tr').count(),0);
+ await owner.getByText('Brak dostępów. Utwórz pierwszy powyżej.',{exact:true}).waitFor();
  await owner.locator('#logout').click();await owner.locator('#login').waitFor();assert.equal((await owner.request.get(base+'/api/owner/grants')).status(),401);
  assert.deepEqual(errors,[]);
  console.log('PASS local HTTPS browser: owner login/create/upload/reset/revoke/logout; recipient wrong password/unlock/image/reload/private case/session invalidation; mobile layout.');

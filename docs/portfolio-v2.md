@@ -16,7 +16,7 @@ Run `npm ci` and `npm run build`; Netlify publishes only `dist/`. For public-onl
 
 ## Shared components and data
 
-Two layouts remain intentional: `long` for narrative case studies, and `showcase` for shorter image-led projects. Do not add unverified research, outcomes or client details to make their narratives match.
+Two layouts remain intentional: `long` for narrative case studies, and `showcase` for shorter image-led projects. Showcase uses a wide, normal vertical page: readable text first, followed by a full-width gallery instead of synchronized narrow columns. Do not add unverified research, outcomes or client details to make their narratives match.
 
 Use case `tags` from this vocabulary: Product design, UI design, Design strategy, Design systems, Web, Mobile app, Email, Accessibility. Filters use exact tags, and cards display all tags used for filtering. The case header uses the same tags.
 
@@ -45,3 +45,7 @@ node tools/test-portfolio-browser.cjs
 Override `PORTFOLIO_TEST_URL` for a different local port. The checks cover the 3 public cases, homepage section navigation, protected full list, titles/tags, metadata, captions/alt text, image decoding, keyboard access, focus trapping/return, overflow and page-title restoration. They never submit contact forms. Confirm remote publication separately after pushing `v2`.
 
 The menu Projects link scrolls the homepage to `#projects`. `#all-projects` and the earlier `#more-projects` link share one password-protected view. Anonymous deep links to former public cases lead to this view as well; their source and images are absent from `dist/`. The publication uses an explicit file allowlist, including only images referenced by the three public cases; legacy HTML is excluded.
+
+Homepage section links align the section heading below the measured sticky menu with 24px extra space, including navigation back from case views.
+
+Case hero images and illustrations preserve their intrinsic aspect ratio and are never enlarged beyond their natural size. Oversized images shrink to fit the available width; different image widths are intentional. Card thumbnails keep their existing crop. Showcase galleries use up to 1600px overall page width with smaller side gutters, while prose stays within 800px. The existing image preview remains keyboard accessible.

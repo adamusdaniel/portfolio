@@ -75,11 +75,11 @@ export function createAccess({store, env, now = Date.now, archive}) {
         }
         const [legacyId] = password.split('.');
         let g=idPattern.test(legacyId) ? await store.get(`grants-${legacyId}`, {type:'json'}) : null;
-        let valid=g && !g.passwordHash.startsWith('scrypt:') && equal(digest(password),g.passwordHash);
+        let valid=g && !g.deleted && !g.passwordHash.startsWith('scrypt:') && equal(digest(password),g.passwordHash);
         if(!valid) {
           const index=await store.get(passwordIndex(password),{type:'json'});
           g=index ? await store.get(`grants-${index.id}`,{type:'json'}) : null;
-          valid=g && g.version===index.version && g.passwordHash.startsWith('scrypt:') && equal(ownerHash(password,g.passwordHash.split(':')[1]),g.passwordHash);
+          valid=g && !g.deleted && g.version===index.version && g.passwordHash.startsWith('scrypt:') && equal(ownerHash(password,g.passwordHash.split(':')[1]),g.passwordHash);
         }
         if (!valid || g.revoked || expired(g)) fail(401, 'Invalid password or inactive access.');
         const id=g.id;
@@ -116,8 +116,8 @@ export function createAccess({store, env, now = Date.now, archive}) {
         if(req.method==='POST' && path==='/api/owner/archive/import' && archive) { await body(req); return json(await archive.importBatch()); }
         if (req.method === 'GET' && path === '/api/owner/grants') {
           const {blobs} = await store.list({prefix:'grants-'});
-          const grants = await Promise.all(blobs.map(async b=>publicGrant(await store.get(b.key,{type:'json'}))));
-          return json({grants:grants.sort((a,b)=>b.createdAt-a.createdAt)});
+          const grants = await Promise.all(blobs.map(async b=>{const g=await store.get(b.key,{type:'json'});return g && !g.deleted ? publicGrant(g) : null;}));
+          return json({grants:grants.filter(Boolean).sort((a,b)=>b.createdAt-a.createdAt)});
         }
         if (req.method === 'POST' && path === '/api/owner/grants') {
           const data = await body(req), days = data.days ?? 7;
@@ -130,14 +130,26 @@ export function createAccess({store, env, now = Date.now, archive}) {
           if (!result.modified) fail(409, 'Spróbuj ponownie.');
           return json({grant:await publicGrant(g),password},201);
         }
-        const match = path.match(/^\/api\/owner\/grants\/([a-f0-9]{32})\/(reset|revoke)$/);
+        const match = path.match(/^\/api\/owner\/grants\/([a-f0-9]{32})\/(reset|revoke|delete)$/);
         if (req.method === 'POST' && match) {
           const data = await body(req), key = `grants-${match[1]}`;
           const entry = await store.getWithMetadata(key,{type:'json'});
           if (!entry) fail(404, 'Nie znaleziono dostępu.');
           if (!entry.etag) fail(503, 'Nie można bezpiecznie zapisać zmiany.');
           const g = entry.data;
+          if(g.deleted) {
+            if(match[2]==='delete') return json({ok:true});
+            fail(404,'Dostęp został usunięty.');
+          }
           if (data.version !== g.version) fail(409, 'Dostęp zmienił się. Odśwież listę.');
+          if(match[2]==='delete') {
+            // Keep only a minimal revocation tombstone. CAS prevents a concurrent
+            // reset from resurrecting a deleted grant; labels and hashes are erased.
+            const result=await store.setJSON(key,{id:g.id,deleted:true,revoked:true,expiresAt:0,version:random()},{onlyIfMatch:entry.etag});
+            if(!result.modified) fail(409,'Równoczesna zmiana. Odśwież listę.');
+            await store.delete(`used-${g.id}`).catch(()=>{});
+            return json({ok:true});
+          }
           let password;
           const nextVersion=random();
           if (match[2] === 'reset') {
