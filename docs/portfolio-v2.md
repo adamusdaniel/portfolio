@@ -7,8 +7,8 @@ Develop and publish changes on `v2`. Do not update `main` without the owner's ex
 - `index.html`: shared shell, homepage, project views and contact form markup.
 - `css/portfolio-v2.css`: the active v2 stylesheet. The other stylesheets support legacy pages.
 - `js/portfolio-v2.js`: navigation, shared case-study components, filters, image preview and homepage interactions.
-- `content/projects.js`: editable public cases, cards, image references and image metadata. Card titles and tags come from the matching case, so edit them in one place.
-- `content/tauron/case.js`: the public English TAURON case. Its content remains separate for a future move to private access. Moving it later cannot remove copies already downloaded or stored in Git history.
+- `content/projects.js`: the 3 editable public cases, cards, image references and image metadata. Card titles and tags come from the matching case, so edit them in one place.
+- Only Buchfix, Loyalty and Moovit (`niewidomi`) are public in v2. TAURON and the other seven existing cases are served through authenticated Functions from Netlify Blobs; see `server/archive.mjs` and `docs/private-access.md`. Earlier public copies in Git, old deploys and the unchanged `main` are not erased by this change.
 - `content/media/`: extracted public images whose bytes differ from the original asset files. Other image references reuse matching files already present in the repository. Keep image contents unchanged when relocating them.
 - `tools/prepare-private.py`: prepares an external private upload bundle. The previous browser-encryption publication command is retired; see `docs/private-access.md`.
 
@@ -34,7 +34,6 @@ Current layout: hero, title, introduction and metadata use the main case width; 
 python3 -B -m unittest discover -s tools -p 'test_*.py'
 node --check js/portfolio-v2.js
 node --check content/projects.js
-node --check content/tauron/case.js
 ```
 
 With Playwright and Chromium installed, start the local server, then run:
@@ -43,4 +42,6 @@ With Playwright and Chromium installed, start the local server, then run:
 node tools/test-portfolio-browser.cjs
 ```
 
-Override `PORTFOLIO_TEST_URL` for a different local port. The checks cover all 11 cases, titles/tags, filters, metadata, captions/alt text, image decoding, keyboard access, focus trapping/return, overflow and page-title restoration. They never submit contact forms. Confirm remote publication separately after pushing `v2`.
+Override `PORTFOLIO_TEST_URL` for a different local port. The checks cover the 3 public cases, homepage section navigation, protected full list, titles/tags, metadata, captions/alt text, image decoding, keyboard access, focus trapping/return, overflow and page-title restoration. They never submit contact forms. Confirm remote publication separately after pushing `v2`.
+
+The menu Projects link scrolls the homepage to `#projects`. `#all-projects` and the earlier `#more-projects` link share one password-protected view. Anonymous deep links to former public cases lead to this view as well; their source and images are absent from `dist/`. The publication uses an explicit file allowlist, including only images referenced by the three public cases; legacy HTML is excluded.

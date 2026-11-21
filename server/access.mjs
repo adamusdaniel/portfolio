@@ -8,7 +8,7 @@ const headers = {'Cache-Control':'private, no-store, max-age=0', 'Netlify-CDN-Ca
 export function ownerHash(password, salt = randomBytes(16).toString('hex')) {
   return `scrypt:${salt}:${scryptSync(password, salt, 64).toString('hex')}`;
 }
-export function createAccess({store, env, now = Date.now}) {
+export function createAccess({store, env, now = Date.now, archive}) {
   const cookieName = role => role === 'owner' ? '__Host-portfolio_owner' : '__Host-portfolio_access';
   const sign = value => createHmac('sha256', env.ACCESS_SESSION_SECRET).update(value).digest('base64url');
   const ownerVersion = () => digest(env.ACCESS_OWNER_PASSWORD_HASH);
@@ -34,11 +34,12 @@ export function createAccess({store, env, now = Date.now}) {
     if (text.length > max) fail(413, 'Za duże żądanie.');
     try { return JSON.parse(text); } catch { fail(400, 'Nieprawidłowe dane.'); }
   }
+  const expired = g => g.expiresAt !== null && (!Number.isFinite(g.expiresAt) || g.expiresAt <= now());
   async function grant(req) {
     const s = readSession(req, 'recipient');
     if (!s || !idPattern.test(s.id)) fail(401, 'Access expired or disabled. Please enter a valid password.');
     const g = await store.get(`grants-${s.id}`, {type:'json'});
-    if (!g || g.revoked || g.expiresAt <= now() || g.version !== s.version) fail(401, 'Access expired or disabled. Please enter a valid password.');
+    if (!g || g.revoked || expired(g) || g.version !== s.version) fail(401, 'Access expired or disabled. Please enter a valid password.');
     return g;
   }
   // Slow deterministic lookup avoids scanning recipients for password-only login.
@@ -80,10 +81,11 @@ export function createAccess({store, env, now = Date.now}) {
           g=index ? await store.get(`grants-${index.id}`,{type:'json'}) : null;
           valid=g && g.version===index.version && g.passwordHash.startsWith('scrypt:') && equal(ownerHash(password,g.passwordHash.split(':')[1]),g.passwordHash);
         }
-        if (!valid || g.revoked || g.expiresAt <= now()) fail(401, 'Invalid password or inactive access.');
+        if (!valid || g.revoked || expired(g)) fail(401, 'Invalid password or inactive access.');
         const id=g.id;
         await store.setJSON(`used-${id}`, {at:now()}, {onlyIfNew:true});
-        return json({ok:true}, 200, {'Set-Cookie':cookie('recipient', session('recipient', {id,version:g.version,exp:Math.min(g.expiresAt, now()+86400000)}), Math.min(86400,Math.floor((g.expiresAt-now())/1000)))});
+        const sessionEnd=Math.min(g.expiresAt ?? Infinity,now()+86400000);
+        return json({ok:true}, 200, {'Set-Cookie':cookie('recipient', session('recipient', {id,version:g.version,exp:sessionEnd}), Math.floor((sessionEnd-now())/1000))});
       }
       if (req.method === 'POST' && ['/api/access/logout','/api/owner/logout'].includes(path)) {
         return json({ok:true}, 200, {'Set-Cookie':cookie(path.includes('/owner/')?'owner':'recipient', '', 0)});
@@ -111,6 +113,7 @@ export function createAccess({store, env, now = Date.now}) {
           await store.setJSON('content-current',data);
           return json({ok:true});
         }
+        if(req.method==='POST' && path==='/api/owner/archive/import' && archive) { await body(req); return json(await archive.importBatch()); }
         if (req.method === 'GET' && path === '/api/owner/grants') {
           const {blobs} = await store.list({prefix:'grants-'});
           const grants = await Promise.all(blobs.map(async b=>publicGrant(await store.get(b.key,{type:'json'}))));
@@ -118,9 +121,10 @@ export function createAccess({store, env, now = Date.now}) {
         }
         if (req.method === 'POST' && path === '/api/owner/grants') {
           const data = await body(req), days = data.days ?? 7;
-          if (typeof data.label !== 'string' || !data.label.trim() || data.label.length > 120 || !Number.isFinite(days) || days < 1/24 || days > 365) fail(400, 'Podaj nazwę i ważność od 1 godziny do 365 dni.');
+          if(data.noExpiry!==undefined && typeof data.noExpiry!=='boolean') fail(400,'Nieprawidłowa opcja ważności.');
+          if (typeof data.label !== 'string' || !data.label.trim() || data.label.length > 120 || (!data.noExpiry && (!Number.isFinite(days) || days < 1/24 || days > 365))) fail(400, 'Podaj nazwę i ważność od 1 godziny do 365 dni.');
           const id = randomBytes(16).toString('hex'), password = data.password ?? `${id}.${random()}`;
-          const g = {id,label:data.label.trim(),createdAt:now(),expiresAt:now()+days*86400000,revoked:false,version:random(),passwordHash:data.password!==undefined?'':digest(password)};
+          const g = {id,label:data.label.trim(),createdAt:now(),expiresAt:data.noExpiry ? null : now()+days*86400000,revoked:false,version:random(),passwordHash:data.password!==undefined?'':digest(password)};
           if(data.password!==undefined) g.passwordHash=await reservePassword(password,id,g.version);
           const result = await store.setJSON(`grants-${id}`, g, {onlyIfNew:true});
           if (!result.modified) fail(409, 'Spróbuj ponownie.');
@@ -137,7 +141,7 @@ export function createAccess({store, env, now = Date.now}) {
           let password;
           const nextVersion=random();
           if (match[2] === 'reset') {
-            if (g.revoked || g.expiresAt <= now()) fail(400, 'Utwórz nowy dostęp dla wygasłego lub wyłączonego wpisu.');
+            if (g.revoked || expired(g)) fail(400, 'Utwórz nowy dostęp dla wygasłego lub wyłączonego wpisu.');
             password = data.password ?? `${g.id}.${random()}`;
             g.passwordHash = data.password!==undefined ? await reservePassword(password,g.id,nextVersion) : digest(password);
           } else g.revoked = true;
@@ -152,12 +156,14 @@ export function createAccess({store, env, now = Date.now}) {
       if (req.method === 'GET' && path === '/api/private/content') {
         await grant(req);
         const data = await store.get('content-current',{type:'json'});
-        return json(data || {cards:[],cases:{},img:{}});
+        const existing=archive ? await archive.content() : {cards:[],cases:{},img:{},media:{}};
+        const uploaded=data || {cards:[],cases:{},img:{},media:{}};
+        return json({cards:[...existing.cards.filter(card=>!uploaded.cards.some(c=>c.slug===card.slug)),...uploaded.cards],cases:{...existing.cases,...uploaded.cases},img:{...existing.img,...uploaded.img},media:{...existing.media,...uploaded.media}});
       }
       const asset = path.match(/^\/api\/private\/images\/([a-f0-9]{64})$/);
       if (req.method === 'GET' && asset) {
         await grant(req);
-        const image = await store.getWithMetadata(`images-${asset[1]}`,{type:'arrayBuffer'});
+        const image = await store.getWithMetadata(`images-${asset[1]}`,{type:'arrayBuffer'}) || (archive ? await archive.image(asset[1]) : null);
         if (!image) fail(404, 'Not found.');
         const type = image.metadata.contentType;
         if (!['image/png','image/jpeg','image/webp'].includes(type)) fail(404, 'Not found.');

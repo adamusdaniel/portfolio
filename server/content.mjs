@@ -1,4 +1,4 @@
-const publicSlugs = new Set(['bezkartek','buchfix','gratefulme','krainazdrowia','loyalty','newsletters','niewidomi','swissprive','ticketly','traininfo','tauron-search']);
+const publicSlugs = new Set(['buchfix','loyalty','niewidomi']);
 export function validateContent(data) {
   if (!data || !Array.isArray(data.cards) || !data.cases || !data.img || typeof data.cases!=='object' || typeof data.img!=='object') throw new Error('Wymagane cards, cases i img.');
   const privateImage = value => {

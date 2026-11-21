@@ -17,3 +17,19 @@
   from = "/private"
   to = "/#more-projects"
   status = 302
+[[redirects]]
+  from = "/portfolio_gallery.html"
+  to = "/#all-projects"
+  status = 302
+[[redirects]]
+  from = "/subpages/buchfix.html"
+  to = "/#project/buchfix"
+  status = 302
+[[redirects]]
+  from = "/subpages/loyalty.html"
+  to = "/#project/loyalty"
+  status = 302
+[[redirects]]
+  from = "/subpages/niewidomi.html"
+  to = "/#project/niewidomi"
+  status = 302

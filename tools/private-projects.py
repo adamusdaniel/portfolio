@@ -29,10 +29,6 @@ def build_data(source):
     project_file = ROOT/'content'/'projects.js'
     if project_file.exists():
         public = json.loads(project_file.read_text().split('=', 1)[1].rstrip(';\n'))['cases']
-        tauron = ROOT/'content'/'tauron'/'case.js'
-        if tauron.exists():
-            project = json.loads(tauron.read_text().split('=', 1)[1].rstrip(';\n'))['case']
-            public[project['slug']] = project
     else:
         public = json.JSONDecoder().raw_decode(re.search(r'var CASES\s*=\s*(.*)', (ROOT/'index.html').read_text()).group(1))[0]
     if set(public) & set(data['cases']):

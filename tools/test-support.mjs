@@ -15,11 +15,11 @@ export class MemoryStore {
   }
   async list({prefix}) {return {blobs:[...this.entries.keys()].filter(k=>k.startsWith(prefix)).map(key=>({key}))};}
 }
-export function setup(store=new MemoryStore(),origin='https://portfolio.test') {
+export function setup(store=new MemoryStore(),origin='https://portfolio.test',options={}) {
   let time=Date.UTC(2026,10,12,12);
   const password=randomBytes(24).toString('hex');
   const env={ACCESS_SESSION_SECRET:randomBytes(32).toString('base64url'),ACCESS_OWNER_PASSWORD_HASH:ownerHash(password)};
-  const handle=createAccess({store,env,now:()=>time});
+  const handle=createAccess({store,env,now:()=>time,...options});
   const request=(path,{data,cookie,headers={},method}={})=>handle(new Request(origin+'/api/'+path,{method:method||(data?'POST':'GET'),headers:{...(data?{'Content-Type':'application/json',Origin:origin}:{}),...(cookie?{Cookie:cookie}:{}),...headers},body:data?JSON.stringify(data):undefined}));
   const cookie=r=>r.headers.get('set-cookie')?.split(';')[0];
   return {request,cookie,store,env,password,advance:ms=>time+=ms,now:()=>time};

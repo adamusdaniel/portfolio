@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "node tools/build-site.mjs",
-    "test": "node --test tools/access.test.mjs",
+    "test": "node --test tools/access.test.mjs tools/archive.test.mjs",
     "test:browser": "node tools/test-portfolio-browser.cjs",
     "test:access:browser": "node tools/test-access-browser.mjs"
   },

@@ -37,7 +37,7 @@
 <span>adamusdaniel.com</span></a>
     <nav><ul class="menu">
       <li><a href="#home" data-go="home" data-sec="home">Home</a></li>
-      <li><a href="#all-projects" data-go="all" data-sec="projects">Projects</a></li>
+      <li><a href="#projects" data-go="home" data-sec="projects">Projects</a></li>
       <li class="m-hide"><a href="#about" data-go="home" data-sec="about">About</a></li>
       <li class="m-hide"><a href="#skills" data-go="home" data-sec="skills">Skills</a></li>
       <li class="m-hide"><a href="#contact" data-go="home" data-sec="contact">Contact</a></li>
@@ -63,7 +63,7 @@
     <div class="container section-head">
       <h2 class="section-title reveal">Projects</h2>
       <div class="grid reveal" id="featured"></div>
-      <div class="center reveal"><a class="btn" href="#all-projects" data-go="all"><span>See more projects</span></a></div>
+      <div class="center reveal"><a class="btn" href="#all-projects" data-go="all"><span>See all projects</span></a></div>
     </div>
   </section>
 
@@ -183,27 +183,17 @@
   </section>
 </main>
 
-<!-- ================= ALL PROJECTS ================= -->
-<main class="view" id="view-all">
-  <section class="section" id="all-projects">
-    <div class="container all-head">
-      <h2 class="section-title"><a class="back" href="#home" data-go="home" aria-label="Back to home"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 5l-7 7 7 7"/></svg></a>Projects</h2>
-      <div class="filters" id="filters"><button class="is-on" data-f="all" aria-pressed="true">All</button><button data-f="product design" aria-pressed="false">Product design</button><button data-f="ui design" aria-pressed="false">UI design</button><button data-f="design strategy" aria-pressed="false">Design strategy</button><button data-f="design systems" aria-pressed="false">Design systems</button><button data-f="web" aria-pressed="false">Web</button><button data-f="mobile app" aria-pressed="false">Mobile app</button><button data-f="email" aria-pressed="false">Email</button><button data-f="accessibility" aria-pressed="false">Accessibility</button></div>
-      <div class="grid" id="all-grid"></div>
-      <div class="center more-cta"><a class="btn ghost" href="#more-projects" data-go="more"><span class="lock-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><span>More projects</span></a></div>
-    </div>
-  </section>
-</main>
+<main class="view" id="view-all" aria-hidden="true"></main>
 
 <main class="view" id="view-more">
   <section class="section" id="more-projects">
     <div class="container all-head">
-      <h2 class="section-title"><a class="back" href="#all-projects" data-go="all" aria-label="Back to projects"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 5l-7 7 7 7"/></svg></a>More projects</h2>
+      <h2 class="section-title"><a class="back" href="#projects" data-go="home" aria-label="Back to projects"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 5l-7 7 7 7"/></svg></a>All projects</h2>
       <div id="moreLocked" class="lock">
         <div class="lock-card">
           <div class="lock-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div>
           <h3>Confidential projects</h3>
-          <p>These case studies are covered by NDAs. Enter the password you received to view them.</p>
+          <p>Enter the password you received to view the full project collection.</p>
           <form id="lockForm" class="lock-form" autocomplete="off">
             <label for="lockPass">Password</label>
             <div class="lock-row"><input id="lockPass" type="password" required autocomplete="current-password" placeholder="Enter password"><button class="btn" type="submit" id="lockBtn"><span>Unlock</span></button></div>
@@ -237,7 +227,7 @@
 </div>
 
 <script src="content/projects.js"></script>
-<script src="content/tauron/case.js"></script>
+
 <script src="js/portfolio-v2.js"></script>
 
 </body>

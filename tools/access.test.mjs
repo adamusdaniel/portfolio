@@ -94,10 +94,14 @@ test('upload validation, image gate and storage failure fail closed',async()=>{
  const a=await create(s,o),c=s.cookie(await login(s,a.password));s.store.get=async()=>{throw Error('do not leak secret');};
  const r=await s.request('private/content',{cookie:c});assert.equal(r.status,503);assert(!await r.text().then(x=>x.includes('do not leak')));
 });
-test('public build excludes backend, credential files, backups and tools; TAURON stays public',async()=>{
+test('public build excludes backend, credential files, backups and tools; only three cases stay public',async()=>{
  const root=path.resolve(import.meta.dirname,'../dist');
  const names=await readdir(root);for(const forbidden of ['server','netlify','tools','node_modules','.htpasswd','.env','.git']) assert(!names.includes(forbidden),forbidden);
- assert((await readFile(path.join(root,'content/tauron/case.js'),'utf8')).includes('tauron-search'));
+ assert(!await readdir(path.join(root,'content')).then(names=>names.includes('tauron')));
+ const script=await readFile(path.join(root,'content/projects.js'),'utf8');
+ assert(!script.includes('tauron-search'));assert(!script.includes('swissprive'));
+ assert.deepEqual(Object.keys(JSON.parse(script.split('=').slice(1).join('=').trim().replace(/;$/,'')).cases),['buchfix','loyalty','niewidomi']);
+ for(const name of ['subpages','light','portfolio_gallery.html','gratefulme.html']) assert(!names.includes(name),name);
  assert(!(await readFile(path.join(root,'js/portfolio-v2.js'),'utf8')).includes('VAULT_DATA'));
 });
 
@@ -123,4 +127,26 @@ test('chosen password validation, uniqueness, failed reset and session-key rotat
  assert.equal((await login(s,password)).status,200);
  const list=await (await s.request('owner/grants',{cookie:await owner(s)})).json();
  assert(!JSON.stringify(list).includes(password));assert(!JSON.stringify([...s.store.entries]).includes(password));
+});
+
+test('non-expiring access: survives time passage, sessions remain short, reset and revoke still work',async()=>{
+ const s=setup();let o=await owner(s);
+ const response=await s.request('owner/grants',{cookie:o,data:{label:'Generic access',password:'Shared permanent phrase!',noExpiry:true}});
+ assert.equal(response.status,201);const a=await response.json();assert.equal(a.grant.expiresAt,null);
+ const initial=s.cookie(await login(s,a.password));const first=s.now();
+ s.advance(400*86400000);
+ assert.equal((await s.request('private/content',{cookie:initial})).status,401);
+ const r=await login(s,a.password);assert.equal(r.status,200);assert.match(r.headers.get('set-cookie'),/Max-Age=86400/);
+ const c=s.cookie(r);assert.equal((await s.request('private/content',{cookie:c})).status,200);
+ o=await owner(s);
+ const reset=await s.request(`owner/grants/${a.grant.id}/reset`,{cookie:o,data:{version:a.grant.version,password:'Replacement permanent phrase!'}});
+ assert.equal(reset.status,200);const updated=await reset.json();
+ assert.equal(updated.grant.expiresAt,null);assert.equal(updated.grant.firstUsedAt,first);
+ assert.equal((await login(s,a.password)).status,401);
+ assert.equal((await s.request('private/content',{cookie:c})).status,401);
+ const active=s.cookie(await login(s,updated.password));
+ assert.equal((await s.request(`owner/grants/${a.grant.id}/revoke`,{cookie:o,data:{version:updated.grant.version}})).status,200);
+ assert.equal((await login(s,updated.password)).status,401);
+ assert.equal((await s.request('private/content',{cookie:active})).status,401);
+ assert.equal((await s.request('owner/grants',{cookie:o,data:{label:'Invalid',noExpiry:'true'}})).status,400);
 });

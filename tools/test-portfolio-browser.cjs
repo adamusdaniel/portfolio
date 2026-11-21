@@ -25,7 +25,7 @@ async function checkCase(page, slug) {
   assert(actual.keyboard, slug);
   assert(!actual.overflow, slug);
   assert(actual.metadata.includes('Role'), slug);
-  const card = await page.locator(`#all-grid .card[href="#project/${slug}"]`).evaluate(e => ({
+  const card = await page.locator(`#featured .card[href="#project/${slug}"]`).evaluate(e => ({
     title: e.querySelector('h3').textContent,
     tags: [...e.querySelectorAll('.tag')].map(t => t.textContent),
   }));
@@ -63,18 +63,25 @@ async function checkCase(page, slug) {
       await page.route('https://fonts.googleapis.com/**', route => route.abort());
       const errors = [];
       page.on('pageerror', error => errors.push(error.message));
+      await page.goto(`${base}/#home`);
+      assert.deepEqual(await page.locator('#featured .card').evaluateAll(cards=>cards.map(c=>c.getAttribute('href').split('/')[1])),['buchfix','loyalty','niewidomi']);
+      await page.locator('.menu [data-sec="projects"]').click();
+      assert.equal(new URL(page.url()).hash,'#projects');
+      assert(await page.locator('#view-home').evaluate(e=>e.classList.contains('is-on')));
+      await page.waitForTimeout(800);
+      assert(Math.abs(await page.locator('#projects').evaluate(e=>e.getBoundingClientRect().top))<180);
       await page.goto(`${base}/#all-projects`);
-      const slugs = await page.locator('#all-grid .card').evaluateAll(cards => cards.map(c => c.getAttribute('href').split('/')[1]));
-      assert.equal(slugs.length, 11);
-      for (let i = 1; i < await page.locator('#filters button').count(); i++) {
-        await page.locator('#filters button').nth(i).click();
-        assert(await page.locator('#all-grid .card:visible').count() > 0);
-        assert.equal(await page.locator('#filters button[aria-pressed="true"]').count(), 1);
-      }
-      await page.locator('#filters [data-f="all"]').click();
+      await page.locator('#moreLocked').waitFor();
+      assert.equal(await page.locator('#more-grid .card').count(),0);
+      await page.goto(`${base}/#project/tauron-search`);
+      await page.locator('#moreLocked').waitFor();
+      assert.equal(await page.locator('#caseRoot h1').count(),0);
+      await page.goto(`${base}/#home`);
+      const slugs = await page.locator('#featured .card').evaluateAll(cards => cards.map(c => c.getAttribute('href').split('/')[1]));
+      assert.deepEqual(slugs,['buchfix','loyalty','niewidomi']);
       for (const slug of slugs) await checkCase(page, slug);
       assert.deepEqual(errors, []);
-      console.log(`PASS ${width}px: 11 cases, titles/tags, filters, metadata, accessible images, focus, overflow, home title`);
+      console.log(`PASS ${width}px: 3 public cases, protected full list, homepage scroll, titles/tags, metadata, accessible images, focus, overflow, home title`);
       await page.close();
     }
   } finally {

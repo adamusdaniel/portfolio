@@ -1,13 +1,21 @@
-# Czasowy dostęp do More projects — instrukcja właściciela
+# Dostęp do All projects — instrukcja właściciela
 
 ## Co jest gotowe
 
-Stały adres dla wszystkich odbiorców: **https://v2--adamusdaniel.netlify.app/#more-projects**.
+Stały adres dla wszystkich odbiorców: **https://v2--adamusdaniel.netlify.app/#all-projects**.
 Panel właściciela: **https://v2--adamusdaniel.netlify.app/owner/**.
 
-Każdy dostęp ma własne hasło ustawiane przez Ciebie (minimum 12 znaków), etykietę osoby/firmy i datę ważności (domyślnie 7 dni od utworzenia). Rekruter nie zakłada konta. Panel pokazuje „Użyte / Nieużyte” i datę pierwszego poprawnego użycia hasła. Nie jest to potwierdzenie tożsamości: ktoś mógł przekazać hasło dalej. Nie ma licznika wizyt ani historii oglądanych projektów.
+Każdy dostęp ma własne hasło ustawiane przez Ciebie (minimum 12 znaków), etykietę osoby/firmy i datę ważności (domyślnie 7 dni od utworzenia) albo opcję „Bez daty wygaśnięcia”. Rekruter nie zakłada konta. Panel pokazuje „Użyte / Nieużyte” i datę pierwszego poprawnego użycia hasła. Nie jest to potwierdzenie tożsamości: ktoś mógł przekazać hasło dalej. Nie ma licznika wizyt ani historii oglądanych projektów.
 
-TAURON pozostaje publiczny. Dwa przyszłe projekty nie są zastąpione fikcyjną zawartością: po zalogowaniu sekcja jest pusta, dopóki nie wgrasz prawdziwych materiałów.
+Publiczne w v2 pozostają tylko Buchfix, Loyalty i Moovit (`niewidomi`). Osiem pozostałych dotychczasowych projektów, w tym TAURON, jest za hasłem w „All projects”. Po odblokowaniu lista pokazuje wszystkie 11 dotychczasowych projektów, w tym 3 publiczne, oraz nowe projekty dodane przez panel. Dwa przyszłe projekty możesz dodać niezależnie przez panel; nie zastępujemy ich fikcyjną zawartością.
+
+### Przeniesienie dotychczasowych projektów
+
+Po zalogowaniu do panelu rozpoczyna się kopiowanie istniejących materiałów do Netlify Blobs. Panel pokazuje postęp i potwierdza zakończenie. Zostaw go otwartego do komunikatu „Dotychczasowe prywatne projekty i grafiki są zapisane w Netlify”. Przerwane kopiowanie można wznowić odświeżeniem panelu. Nie zmieniaj sekretów ani nazwy magazynu. Istniejące hasła i wgrane wcześniej nowe projekty zostają zachowane.
+
+Źródłem jednorazowego przeniesienia jest dokładnie przypięta, wcześniejsza publiczna rewizja GitHuba, nie ruchomy branch. Serwer odczytuje JSON, nie wykonuje pobranego kodu. Teksty trafiają do magazynu prywatnego, a grafiki są kopiowane partiami. Brakująca grafika może zostać skopiowana także przy pierwszym uprawnionym otwarciu. Po ukończeniu importu katalog i grafiki nie wymagają połączenia z GitHubem. Przy niedostępnym źródle import odmawia udostępnienia brakującej treści.
+
+Zmiana zabezpiecza bieżący podgląd **v2**. Nie usuwa wcześniejszych publicznych kopii: historii GitHuba, starych deployów ani strony z `main` (którego nie zmieniamy bez osobnej zgody). Treści opublikowanych wcześniej nie można uznać za w pełni poufne tylko dzięki tej migracji.
 
 ## Jednorazowa aktywacja w Netlify
 
@@ -21,7 +29,7 @@ Nie wpisuj żadnych sekretów do czatu, plików repozytorium ani adresów URL.
    Ustaw wartości dla **konkretnego brancha `v2`** (opcja kontekstów / Specific branches). Jeżeli możesz wybrać zakres, wybierz **Functions**; na planie bez wyboru zakresów pozostaw wszystkie. Dla sekretów zaznacz **Contains secret values**, jeśli ta opcja jest dostępna. Nie dodawaj prefiksu typu `PUBLIC_`. Nie potrzebujesz ręcznego tokenu dostępu do Blobs.
 3. W **Project configuration → Build & deploy → Continuous deployment** sprawdź: branch deploys obejmują `v2`, base directory jest katalogiem repozytorium, polecenie budowania to `npm run build`, publish directory to `dist`, functions directory to `netlify/functions`. Te wartości są też w prawidłowym pliku `netlify.toml`. Dawny plik `.netlify.toml` z kropką nie jest nową konfiguracją.
 4. W **Deploys** ponów budowanie brancha `v2` po dodaniu zmiennych. Nie zmieniaj production branch ani `main`. W logu ma być `Built public site in dist/`. Nie publikuj ręcznie całego katalogu repozytorium metodą drag-and-drop: taki deploy nie przygotuje funkcji i bezpiecznego katalogu publicznego.
-5. Otwórz `/owner/`, zaloguj się osobnym hasłem i utwórz testowy dostęp. W prywatnym oknie przeglądarki sprawdź jego hasło pod stałym adresem More projects. Zresetuj hasło, sprawdź stare i nowe, następnie wyłącz testowy dostęp. Sprawdź również zwykłe publiczne projekty i TAURON.
+5. Otwórz `/owner/`, zaloguj się osobnym hasłem i utwórz testowy dostęp. W prywatnym oknie przeglądarki sprawdź jego hasło pod stałym adresem All projects. Zresetuj hasło, sprawdź stare i nowe, następnie wyłącz testowy dostęp. Sprawdź również zwykłe publiczne projekty i TAURON.
 
 Brak konfiguracji lub niedostępny magazyn kończy się odmową dostępu (503), nie publicznym udostępnieniem treści. Implementacja działa wyłącznie dla buildów `v2` o kontekście `branch-deploy`; Deploy Previews i pozostałe branche mają wyłączone API. Nie zmieniaj nazwy `ACCESS_STORE` po rozpoczęciu używania — inna nazwa oznacza nowy pusty magazyn. Nigdy nie używaj tego samego magazynu do eksperymentów w innych projektach.
 
@@ -29,13 +37,15 @@ Brak konfiguracji lub niedostępny magazyn kończy się odmową dostępu (503), 
 
 1. Otwórz panel i zaloguj się hasłem właściciela.
 2. Wpisz nazwę osoby lub firmy. To Twoja etykieta, nie zweryfikowane dane odbiorcy.
-3. Wpisz własne hasło odbiorcy (12–128 znaków, bez spacji na początku i końcu). Może to być fraza z kilku słów. Nie używaj swojego hasła właściciela. Każdy wpis i reset wymaga innego, nieużywanego wcześniej hasła. Pozostaw 7 dni lub wpisz inną wartość (od 1 godziny, czyli 0,0416667 dnia, do 365 dni). Kliknij **Utwórz dostęp**.
+3. Wpisz własne hasło odbiorcy (12–128 znaków, bez spacji na początku i końcu). Może to być fraza z kilku słów. Nie używaj swojego hasła właściciela. Każdy wpis i reset wymaga innego, nieużywanego wcześniej hasła. Pozostaw 7 dni lub wpisz inną wartość (od 1 godziny, czyli 0,0416667 dnia, do 365 dni). Zamiast liczby dni możesz zaznaczyć **Bez daty wygaśnięcia — do ręcznego wyłączenia**. Kliknij **Utwórz dostęp**.
 4. Kliknij **Kopiuj hasło**. Nowe hasło jest dostępne tylko w tym momencie — zapisz je, zanim zamkniesz lub odświeżysz panel. Nie da się go później odczytać; można je zresetować.
-5. Wyślij odbiorcy stały adres sekcji More projects i jego hasło. Nie dopisuj hasła do linku.
+5. Wyślij odbiorcy stały adres sekcji All projects i jego hasło. Nie dopisuj hasła do linku.
 6. **Resetuj hasło** otwiera formularz do wpisania nowego hasła. Po zapisaniu unieważnia poprzednie hasło i sesje tylko tego wpisu. Pozostawia termin i datę pierwszego użycia. **Wyłącz dostęp** odcina go przed terminem. Wygasły/wyłączony wpis zastąp nowym dostępem. Panel poprosi o potwierdzenie tych działań.
 7. Kliknij **Odśwież**, aby zobaczyć aktualny stan użycia. Czasy są wyświetlane w lokalnej strefie przeglądarki. **Wyloguj** kończy sesję panelu (maksymalnie trwa ona godzinę).
 
-Pierwsze użycie oznacza pierwsze poprawne logowanie do sekcji, również jeśli projekty są jeszcze w przygotowaniu. Nie zmienia się po ponownym logowaniu ani resecie hasła. Dostęp rekrutera ma sesję do 24 godzin, maksymalnie do końca ważności hasła; potem może ponownie wpisać nadal aktywne hasło. Serwer sprawdza cofnięcie, termin i wersję dostępu przy każdym żądaniu treści i obrazu. Otwarta strona sprawdza sesję co 30 sekund oraz po powrocie do okna. Już pobranych przez odbiorcę kopii i zrzutów ekranu nie można wycofać.
+Dla hasła ogólnego utwórz osobny wpis, np. „Dostęp ogólny”, i wybierz brak daty wygaśnięcia. Wspólne hasło nie pozwala odciąć jednej osoby: reset/wyłączenie obejmuje wszystkich odbiorców tego hasła, a pierwsze użycie jest wspólne. Sesja przeglądarki nadal trwa do 24 godzin; po niej można ponownie wpisać nadal aktywne hasło bezterminowe.
+
+Pierwsze użycie oznacza pierwsze poprawne logowanie do sekcji. Nie zmienia się po ponownym logowaniu ani resecie hasła. Dostęp rekrutera ma sesję do 24 godzin, maksymalnie do końca ważności hasła; potem może ponownie wpisać nadal aktywne hasło. Serwer sprawdza cofnięcie, termin i wersję dostępu przy każdym żądaniu treści i obrazu. Otwarta strona sprawdza sesję co 30 sekund oraz po powrocie do okna. Już pobranych przez odbiorcę kopii i zrzutów ekranu nie można wycofać.
 
 ## Dodawanie dwóch prawdziwych projektów
 
@@ -66,7 +76,7 @@ Na swoim komputerze uruchom (ścieżki zastąp własnymi):
 python3 tools/prepare-private.py /sciezka/prywatne/projects.json /sciezka/prywatne/pakiet.json
 ```
 
-Narzędzie odmawia zapisu wewnątrz repozytorium. Nie publikuje, nie szyfruje hasłem odbiorcy i nie zmienia strony. W panelu rozwiń **Wgraj prawdziwe prywatne projekty**, wybierz `pakiet.json` i kliknij **Wgraj projekty**. Obrazy trafiają do niepublicznego Netlify Blobs, a treść jest podmieniana dopiero po pomyślnym wgraniu wszystkich grafik. Pakiet zawiera całą sekcję, więc przy aktualizacji uwzględnij oba projekty. Maksimum pakietu w panelu: 60 MB; tekstu i struktury po odłączeniu obrazów: 2 MB. Wgrywanie nie zmienia istniejących dostępów. Wyloguj i odblokuj sekcję ponownie, aby sprawdzić nową wersję.
+Narzędzie odmawia zapisu wewnątrz repozytorium. Nie publikuje, nie szyfruje hasłem odbiorcy i nie zmienia strony. W panelu rozwiń **Wgraj prawdziwe prywatne projekty**, wybierz `pakiet.json` i kliknij **Wgraj projekty**. Obrazy trafiają do niepublicznego Netlify Blobs, a treść jest podmieniana dopiero po pomyślnym wgraniu wszystkich grafik. Pakiet zastępuje sekcję projektów dodanych przez panel; uwzględnij więc wszystkie takie projekty. Osiem przeniesionych projektów pozostaje niezależnie. Pakiet o takim samym slugu może nadpisać wybrany przeniesiony projekt; pozostałe nie zostaną usunięte. Maksimum pakietu w panelu: 60 MB; tekstu i struktury po odłączeniu obrazów: 2 MB. Wgrywanie nie zmienia istniejących dostępów. Wyloguj i odblokuj sekcję ponownie, aby sprawdzić nową wersję.
 
 Stary tryb `private-projects.py build` jest celowo zablokowany: przeglądarkowe szyfrowanie jednym hasłem nie zapewnia czasowego dostępu ani cofania sesji. Historyczna zaszyfrowana kopia pozostaje w Git, ale nie jest kopiowana do publikowanego `dist/`.
 
@@ -84,7 +94,7 @@ Stan oficjalnej dokumentacji sprawdzony 12 listopada 2026: obecny Free obejmuje 
 - Wszystkie odpowiedzi API mają `no-store`; brak CORS, POST wymaga zgodnego Origin i JSON. Używaj HTTPS. Nie loguj treści żądań, haseł, ciasteczek ani danych magazynu.
 - Netlify Blobs i Functions używają uprawnień konta Netlify. Administratorzy konta mogą odczytywać magazyn. Kopie prywatnych źródeł trzeba utrzymywać osobno; nie usuwać store w panelu Netlify.
 - Statyczny szkielet `/owner/` jest publiczny, ale jego dane i wszystkie operacje wymagają sesji właściciela. Sam adres panelu nie jest zabezpieczeniem.
-- Publikacja kopiuje tylko publiczne pliki do `dist/`; `.htpasswd`, backend, `.env`, narzędzia i backupy nie trafiają do CDN. Publiczne case studies nie zostały przeniesione do prywatnej sekcji ani przepisane.
+- Publikacja kopiuje tylko publiczne pliki do `dist/`; `.htpasswd`, backend, `.env`, narzędzia i backupy nie trafiają do CDN. Narracje case studies pozostają zachowane. Poza trzema wskazanymi projektami ich teksty i grafiki są przeniesione do prywatnego magazynu; stare strony HTML i niepubliczne obrazy są wykluczone z publikacji.
 
 Testy lokalne:
 
