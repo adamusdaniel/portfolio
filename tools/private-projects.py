@@ -22,8 +22,9 @@ def build_data(source):
         slug = card.get('slug', '')
         if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', slug) or slug not in data['cases']:
             raise ValueError('Each card needs a valid slug and a matching case.')
-        if not all(isinstance(card.get(k), str) and card[k] for k in ['title', 'desc', 'thumb']):
-            raise ValueError('Every card needs title, desc and thumb.')
+        required = ['title', 'desc'] if card.get('cover') == 'typographic' else ['title', 'desc', 'thumb']
+        if not all(isinstance(card.get(k), str) and card[k] for k in required):
+            raise ValueError('Every card needs title, desc and a private thumbnail or typographic cover.')
         if not isinstance(card.get('tags'), list) or not all(isinstance(t, str) for t in card['tags']):
             raise ValueError('Card tags must be a list of strings.')
     project_file = ROOT/'content'/'projects.js'

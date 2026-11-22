@@ -103,14 +103,25 @@ export function createAccess({store, env, now = Date.now, archive}) {
           await store.set(`images-${id}`,bytes,{metadata:{contentType:type},onlyIfNew:true});
           return json({url:`/api/private/images/${id}`});
         }
-        if (req.method === 'POST' && path === '/api/owner/content') {
+        if (req.method === 'POST' && ['/api/owner/content','/api/owner/content/import'].includes(path)) {
           const data=await body(req,2000000);
           try { validateContent(data); } catch(e) { fail(400,e.message); }
           for (const value of Object.values(data.img)) {
             if(!await store.getMetadata('images-'+value.split('/').pop())) fail(400,'Brak wgranego obrazu.');
           }
-          // Content is replaced as a whole only after every image is available.
-          await store.setJSON('content-current',data);
+          // Import selected cases without dropping unrelated uploaded projects.
+          if(path.endsWith('/import')) {
+            const current=await store.getWithMetadata('content-current',{type:'json'});
+            if(current && !current.etag) fail(503,'Nie można bezpiecznie zapisać zmiany.');
+            const previous=current?.data || {cards:[],cases:{},img:{},media:{}};
+            const ids=new Set(data.cards.map(card=>card.slug));
+            const merged={cards:[...previous.cards.filter(card=>!ids.has(card.slug)),...data.cards],cases:{...previous.cases,...data.cases},img:{...previous.img,...data.img},media:{...previous.media,...data.media}};
+            if(JSON.stringify(merged).length>2000000) fail(413,'Łączny tekst projektów przekracza limit 2 MB.');
+            const result=await store.setJSON('content-current',merged,current?{onlyIfMatch:current.etag}:{onlyIfNew:true});
+            if(!result.modified) fail(409,'Projekty zmieniły się podczas importu. Wgraj pakiet ponownie.');
+          } else {
+            await store.setJSON('content-current',data);
+          }
           return json({ok:true});
         }
         if(req.method==='POST' && path==='/api/owner/archive/import' && archive) { await body(req); return json(await archive.importBatch()); }

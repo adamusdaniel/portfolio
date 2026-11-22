@@ -68,7 +68,7 @@ Format wejściowy jest zgodny z dotychczasowym `tools/private-projects.py`: obie
 }
 ```
 
-W prywatnym folderze umieść `projects.json` i podfolder `images/` z obrazami. Każdy obraz musi być PNG, JPEG lub WebP do 3 MB. Każda karta ma własny slug, inny niż publiczne projekty; każda grafika ma klucz zaczynający się od `private/`. `img` mapuje te klucze na pliki względem `projects.json`. W treści używaj własnego, zaufanego tekstu i prostego formatowania HTML; obrazy umieszczaj przez strukturę danych, bez `<img>`, skryptów i zewnętrznych mediów w HTML.
+W prywatnym folderze umieść `projects.json` i podfolder `images/` z obrazami. Każdy obraz musi być PNG, JPEG lub WebP do 3 MB. Karta tekstowa może mieć `"cover":"typographic"` i opcjonalne `"coverLabel"` zamiast `thumb`; projekt `long` nie wymaga hero ani grafik (`img` pozostaje pustym obiektem). Opcjonalne `chapters` wskazują identyfikatory nagłówków `h` w `blocks`. Każda karta ma własny slug, inny niż publiczne projekty; każda grafika ma klucz zaczynający się od `private/`. `img` mapuje te klucze na pliki względem `projects.json`. W treści używaj własnego, zaufanego tekstu i prostego formatowania HTML; obrazy umieszczaj przez strukturę danych, bez `<img>`, skryptów i zewnętrznych mediów w HTML.
 
 Na swoim komputerze uruchom (ścieżki zastąp własnymi):
 
@@ -76,7 +76,7 @@ Na swoim komputerze uruchom (ścieżki zastąp własnymi):
 python3 tools/prepare-private.py /sciezka/prywatne/projects.json /sciezka/prywatne/pakiet.json
 ```
 
-Narzędzie odmawia zapisu wewnątrz repozytorium. Nie publikuje, nie szyfruje hasłem odbiorcy i nie zmienia strony. W panelu rozwiń **Wgraj prawdziwe prywatne projekty**, wybierz `pakiet.json` i kliknij **Wgraj projekty**. Obrazy trafiają do niepublicznego Netlify Blobs, a treść jest podmieniana dopiero po pomyślnym wgraniu wszystkich grafik. Pakiet zastępuje sekcję projektów dodanych przez panel; uwzględnij więc wszystkie takie projekty. Osiem przeniesionych projektów pozostaje niezależnie. Pakiet o takim samym slugu może nadpisać wybrany przeniesiony projekt; pozostałe nie zostaną usunięte. Maksimum pakietu w panelu: 60 MB; tekstu i struktury po odłączeniu obrazów: 2 MB. Wgrywanie nie zmienia istniejących dostępów. Wyloguj i odblokuj sekcję ponownie, aby sprawdzić nową wersję.
+Narzędzie odmawia zapisu wewnątrz repozytorium. Nie publikuje, nie szyfruje hasłem odbiorcy i nie zmienia strony. W panelu rozwiń **Wgraj prawdziwe prywatne projekty**, wybierz `pakiet.json` albo wklej gotowy pakiet tekstowy w pole poniżej, następnie kliknij **Wgraj projekty**. Pakiet tekstowy jest tylko sposobem przeniesienia danych, nie szyfrowaniem — zachowaj go prywatnie. Obrazy trafiają do niepublicznego Netlify Blobs, a treść jest podmieniana dopiero po pomyślnym wgraniu wszystkich grafik. Pakiet dopisuje projekty do prywatnego magazynu. Wpis o istniejącym slugu zostaje zaktualizowany, a wszystkie pozostałe pozostają bez zmian. Import używa zapisu warunkowego, żeby nie zgubić równoczesnej aktualizacji. Osiem przeniesionych projektów pozostaje niezależnie. Pakiet o takim samym slugu może nadpisać wybrany przeniesiony projekt; pozostałe nie zostaną usunięte. Maksimum pakietu w panelu: 60 MB; tekstu i struktury po odłączeniu obrazów: 2 MB. Wgrywanie nie zmienia istniejących dostępów. Wyloguj i odblokuj sekcję ponownie, aby sprawdzić nową wersję.
 
 Stary tryb `private-projects.py build` jest celowo zablokowany: przeglądarkowe szyfrowanie jednym hasłem nie zapewnia czasowego dostępu ani cofania sesji. Historyczna zaszyfrowana kopia pozostaje w Git, ale nie jest kopiowana do publikowanego `dist/`.
 
@@ -104,6 +104,7 @@ npm run build
 npm test
 python3 -B -m unittest discover -s tools -p 'test_*.py'
 node tools/test-access-browser.mjs
+node tools/test-private-import-browser.mjs
 # osobno uruchom serwer publicznego dist/ na porcie 8000:
 python3 -m http.server 8000 --bind 127.0.0.1 --directory dist
 # w drugim terminalu:

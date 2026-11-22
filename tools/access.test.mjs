@@ -198,3 +198,24 @@ test('recipient minimum length is six for creation and reset',async()=>{
  const html=await readFile(new URL('../owner/index.html',import.meta.url),'utf8');
  assert.match(html,/id="recipientPassword"[^>]*minlength="6"/);assert.match(html,/id="resetPassword"[^>]*minlength="6"/);
 });
+
+test('typographic private cases import additively without dropping existing projects',async()=>{
+ const s=setup(),o=await owner(s),url=await image(s,o);
+ assert.equal((await s.request('owner/content',{cookie:o,data:fixture('/api/'+url)})).status,200);
+ const data={cards:[{slug:'text-only',title:'Text case',desc:'Test only',tags:['Web'],cover:'typographic',coverLabel:'Text case'}],cases:{'text-only':{type:'long',title:'Text case',details:[['Role','Designer']],chapters:[{id:'research',label:'Research'}],blocks:[{t:'h',lvl:3,id:'research',v:'Research'},{t:'p',v:'Private test narrative.'}]}},img:{}};
+ assert.equal((await s.request('owner/content/import',{data})).status,401);
+ assert.equal((await s.request('owner/content/import',{cookie:o,data})).status,200);
+ let saved=await s.store.get('content-current');assert.deepEqual(saved.cards.map(c=>c.slug),['test-only','text-only']);assert(saved.img['private/test.png']);
+ data.cases['text-only'].title='Updated text case';assert.equal((await s.request('owner/content/import',{cookie:o,data})).status,200);
+ saved=await s.store.get('content-current');assert.equal(saved.cards.length,2);assert.equal(saved.cases['text-only'].title,'Updated text case');
+ assert.equal((await s.request('private/content')).status,401);
+ const a=await create(s,o);const cookie=s.cookie(await login(s,a.password));assert((await (await s.request('private/content',{cookie})).json()).cases['text-only']);
+ const broken=structuredClone(data);delete broken.cards[0].cover;assert.equal((await s.request('owner/content/import',{cookie:o,data:broken})).status,400);
+});
+test('additive import uses conditional writes to preserve simultaneous content changes',async()=>{
+ const s=setup(),o=await owner(s);
+ const template=slug=>({cards:[{slug,title:slug,desc:'Test only',tags:['Web'],cover:'typographic'}],cases:{[slug]:{type:'long',title:slug,details:[],blocks:[]}},img:{}});
+ const responses=await Promise.all(['first-case','second-case'].map(slug=>s.request('owner/content/import',{cookie:o,data:template(slug)})));
+ assert.deepEqual(responses.map(r=>r.status).sort(),[200,409]);
+ assert.equal((await s.store.get('content-current')).cards.length,1);
+});

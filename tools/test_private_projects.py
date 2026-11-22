@@ -60,6 +60,16 @@ class PrivateProjectsTests(unittest.TestCase):
         self.write_source()
         with self.assertRaises(ValueError): builder.build_data(self.source)
 
+    def test_text_only_private_case(self):
+        self.data['cards'][0].pop('thumb')
+        self.data['cards'][0]['cover'] = 'typographic'
+        self.data['cases']['fixture'] = {'type': 'long', 'title': 'Private fixture', 'details': [], 'blocks': []}
+        self.data['img'] = {}
+        self.write_source()
+        result = builder.build_data(self.source)
+        self.assertEqual(result['img'], {})
+        self.assertEqual(result['cards'][0]['cover'], 'typographic')
+
     def test_client_side_publication_is_retired(self):
         self.write_source()
         original = (self.site/'index.html').read_text()

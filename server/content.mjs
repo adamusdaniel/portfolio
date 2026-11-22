@@ -9,7 +9,13 @@ export function validateContent(data) {
   for (const c of data.cards) {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(c.slug) || publicSlugs.has(c.slug) || !Object.hasOwn(data.cases,c.slug)) throw new Error('Nieprawidłowa lub publiczna nazwa projektu.');
     const value=data.cases[c.slug];
-    privateImage(c.thumb);
+    if(c.cover==='typographic'){if(c.thumb) throw new Error('Okładka tekstowa nie może zawierać grafiki.');}
+    else privateImage(c.thumb);
+    if(c.coverLabel!==undefined && (typeof c.coverLabel!=='string' || !c.coverLabel.trim() || c.coverLabel.length>120)) throw new Error('Nieprawidłowy napis okładki.');
+    if(value.chapters!==undefined) {
+      if(value.type!=='long' || !Array.isArray(value.chapters) || value.chapters.length>12 || value.chapters.some(ch=>!ch || !/^[a-z][a-z0-9-]*$/.test(ch.id||'') || typeof ch.label!=='string' || !ch.label.trim() || !value.blocks?.some(b=>b.t==='h' && b.id===ch.id))) throw new Error('Rozdziały muszą wskazywać istniejące nagłówki.');
+      if(new Set(value.chapters.map(ch=>ch.id)).size!==value.chapters.length) throw new Error('Nazwy techniczne rozdziałów muszą być unikalne.');
+    }
     if(value.hero) privateImage(value.hero);
     if(Array.isArray(value.gallery)) value.gallery.forEach(privateImage);
     for(const block of [...(value.blocks || []),...(value.description || [])]) if(block.t==='img') privateImage(block.v);

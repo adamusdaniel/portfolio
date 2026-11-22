@@ -30,3 +30,5 @@
 /* Shared card layout must not override the native closed-dialog state. */
 #resetDialog:not([open]){display:none!important}
 #resetDialog{color:var(--text)}
+
+.owner textarea{width:100%;min-height:140px;padding:14px;border:1px solid var(--line);border-radius:12px;font:14px/1.5 monospace;resize:vertical}

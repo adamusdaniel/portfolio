@@ -8,7 +8,7 @@
     var job=++anchorJob,heading=el.querySelector('.section-title')||el;
     smooth=smooth&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     function finish(){
-      if(job!==anchorJob||!views.home.classList.contains('is-on')) return;
+      if(job!==anchorJob||!el.closest('.view')?.classList.contains('is-on')) return;
       var delta=heading.getBoundingClientRect().top-nav.getBoundingClientRect().bottom-24;
       if(Math.abs(delta)>1) window.scrollTo({top:Math.max(0,window.scrollY+delta),behavior:'instant'});
     }
@@ -83,7 +83,7 @@
   }
   function block(b){
     return (function(){
-      if(b.t==='h') return b.lvl<=3 ? '<h2>'+b.v+'</h2>' : '<h3 class="case-eyebrow">'+b.v+'</h3>';
+      if(b.t==='h'){var anchor=/^[a-z][a-z0-9-]*$/.test(b.id||'')?' id="'+b.id+'"':'';return b.lvl<=3?'<h2'+anchor+'>'+b.v+'</h2>':'<h3 class="case-eyebrow"'+anchor+'>'+b.v+'</h3>';}
       if(b.t==='label') return '<div class="label">'+b.v+'</div>';
       if(b.t==='p') return '<p>'+b.v+'</p>';
       if(b.t==='ul') return '<ul>'+b.v.map(function(i){return '<li>'+i+'</li>'}).join('')+'</ul>';
@@ -96,7 +96,7 @@
   /* ---- global project card component: used on Home, Projects and inside every case study ---- */
   function projectCard(p){
     return '<a class="card" href="#'+(p.private?'private':'project')+'/'+p.slug+'" data-go="case" data-tags="'+esc(p.tags.join(', '))+'">'+
-      '<div class="card-img"><img src="'+im(p.thumb)+'" alt="'+esc(p.title)+'" loading="lazy"></div>'+
+      (p.cover==='typographic'?'<div class="card-img card-cover-type"><span>Product design</span><strong>'+esc(p.coverLabel||p.title)+'</strong><span>'+esc(p.tags.join(' · '))+'</span></div>':'<div class="card-img"><img src="'+im(p.thumb)+'" alt="'+esc(p.title)+'" loading="lazy"></div>')+
       '<div class="tags">'+p.tags.map(function(x){return '<span class="tag">'+esc(x)+'</span>'}).join('')+'</div>'+
       '<div class="card-text"><h3>'+esc(p.title)+'</h3><p>'+esc(p.desc)+'</p></div>'+
 
@@ -169,6 +169,8 @@
     if(c.tags) d.pills='<div class="kw">'+c.tags.map(function(t){return '<span class="tag">'+esc(t)+'</span>'}).join('')+'</div>';
     var isPriv=!!(c&&c.private); var back='<div class="case-top"><a class="back" href="'+(isPriv?'#all-projects':'#projects')+'" data-go="all" aria-label="Back to projects"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 5l-7 7 7 7"/></svg></a></div>';
     var title='<div class="title-row"><a class="back back-sm" href="'+(isPriv?'#all-projects':'#projects')+'" data-go="all" aria-label="Back to projects"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 5l-7 7 7 7"/></svg></a><h1 class="case-title">'+c.title+'</h1></div>'+(c.subtitle?'<p class="case-sub">'+c.subtitle+'</p>':'');
+    var chapters=(c.chapters||[]).filter(function(chapter){return /^[a-z][a-z0-9-]*$/.test(chapter.id||'');});
+    var chapterNav=chapters.length?'<nav class="case-chapters" aria-label="Case study chapters">'+chapters.map(function(chapter){return '<button type="button" data-case-anchor="'+chapter.id+'">'+esc(chapter.label)+'</button>';}).join('')+'</nav>':'';
     var body='', imgs=[];
     if(c.type==='long'){
       imgs=[].concat(c.blocks.filter(function(b){return b.t==='img'}).map(function(b){return b.v}));
@@ -178,7 +180,7 @@
         e0=s0; while(e0<bl.length && (bl[e0].t==='p'||bl[e0].t==='ul'||bl[e0].t==='ol')) e0++;
         var intro=bl.slice(s0,e0), rest=bl.slice(0,pd>=0?pd:0).concat(bl.slice(e0));
         return '<div class="case-head">'+title+d.pills+'<div class="case-body intro-lead">'+blocks(intro)+'</div></div>'+
-          '<div class="roles">'+d.tiles+'</div>'+
+          '<div class="roles">'+d.tiles+'</div>'+chapterNav+
           '<div class="case-body long-body">'+blocks(rest)+'</div>';
       })();
     } else {
@@ -198,6 +200,7 @@
     var nav='<div class="case-more"><h2 class="section-title">More projects</h2><div class="grid">'+projectGrid(more)+'</div></div>';
     if(RO) root.querySelectorAll('.card').forEach(function(card){RO.unobserve(card);});
     root.innerHTML=body+nav;
+    root.querySelectorAll('[data-case-anchor]').forEach(function(button){button.addEventListener('click',function(){var heading=root.querySelector('#'+button.dataset.caseAnchor);if(heading)scrollToSection(heading,true);});});
     watchOutlines(root);
     SP=null;
     var sm=document.querySelectorAll('#spM img'), left=sm.length;

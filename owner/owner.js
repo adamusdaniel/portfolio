@@ -94,10 +94,26 @@
     closeReset(); hideSecret(); await load(); reveal(result.password);
     $('notice').textContent='Hasło zostało zresetowane.';
   });});
+  $('bundleText').addEventListener('input',()=>{if($('bundleText').value.trim()) $('bundle').value='';});
+  $('bundle').addEventListener('change',()=>{if($('bundle').files.length) $('bundleText').value='';});
+  async function decodeBundle(text){
+    if(text.length>60000000) throw new Error('Pakiet musi mieć mniej niż 60 MB.');
+    const prefix='PORTFOLIO_BUNDLE_V1:';
+    if(text.trim().startsWith(prefix)) {
+      const encoded=text.trim().slice(prefix.length).replace(/\s/g,'');
+      const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
+      const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip')).getReader();
+      const decoder=new TextDecoder();let total=0;const parts=[];
+      while(true){const result=await reader.read();if(result.done) break;total+=result.value.byteLength;if(total>60000000){await reader.cancel();throw new Error('Rozpakowany pakiet przekracza 60 MB.');}parts.push(decoder.decode(result.value,{stream:true}));}
+      parts.push(decoder.decode());text=parts.join('');
+    }
+    return JSON.parse(text);
+  }
   $('upload').addEventListener('submit',e=>{e.preventDefault();run(async()=>{
-    const file=$('bundle').files[0];
-    if(!file || file.size>60000000) throw new Error('Wybierz pakiet mniejszy niż 60 MB.');
-    const data=JSON.parse(await file.text());
+    const file=$('bundle').files[0],pasted=$('bundleText').value.trim();
+    if(!file && !pasted) throw new Error('Wybierz plik lub wklej gotowy pakiet projektu.');
+    if(file && file.size>60000000) throw new Error('Wybierz pakiet mniejszy niż 60 MB.');
+    const data=await decodeBundle(file?await file.text():pasted);
     if(!data.img || !data.cards?.length) throw new Error('Pakiet musi zawierać prawdziwe projekty i img.');
     for(const [key,value] of Object.entries(data.img)) {
       const m=typeof value==='string' && value.match(/^data:image\/(?:png|jpeg|webp);base64,([A-Za-z0-9+/]+=*)$/);
@@ -105,7 +121,7 @@
       $('notice').textContent='Wgrywanie obrazu: '+key;
       data.img[key]=(await api('images',{base64:m[1]})).url;
     }
-    await api('content',data); $('bundle').value='';
+    await api('content/import',data); $('bundle').value='';$('bundleText').value='';
     $('notice').textContent='Projekty wgrane. Sprawdź sekcję All projects przy użyciu aktywnego hasła.';
   });});
   $('refresh').addEventListener('click',()=>run(load));
