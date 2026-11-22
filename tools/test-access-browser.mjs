@@ -36,8 +36,9 @@ try {
  const owner=await context.newPage();const errors=[];owner.on('pageerror',e=>errors.push(e.message));
  await owner.route('https://fonts.googleapis.com/**',r=>r.abort());
  await owner.goto(base+'/owner/');
+ assert(!await owner.locator('#resetDialog').isVisible(),'Reset dialog must be hidden before login');
  await owner.locator('#ownerPassword').fill('wrong');await owner.locator('#ownerLogin button').click();await owner.getByText('Nieprawidłowe hasło.',{exact:true}).waitFor();
- await owner.locator('#ownerPassword').fill(s.password);await owner.locator('#ownerLogin button').click();await owner.locator('#panel').waitFor();
+ await owner.locator('#ownerPassword').fill(s.password);await owner.locator('#ownerLogin button').click();await owner.locator('#panel').waitFor();assert(!await owner.locator('#resetDialog').isVisible(),'Reset dialog must stay hidden until requested');
  assert.equal(await owner.locator('#days').inputValue(),'7');await owner.locator('#noExpiry').check();assert(await owner.locator('#days').isDisabled());
  await owner.locator('#label').fill('Browser test company');await owner.locator('#recipientPassword').fill('My browser test phrase!');await owner.locator('#create button').click();await owner.locator('#secretBox').waitFor();
  const password=await owner.locator('#newPassword').inputValue();assert.equal(password,'My browser test phrase!');
@@ -107,6 +108,7 @@ try {
  await recipient.goto(base+'/#private/test-only');await recipient.locator('#caseRoot h1').waitFor();
  await owner.locator('#refresh').click();await owner.locator('.grant-table tbody tr td').nth(3).filter({hasText:/\d{2}:\d{2}/}).waitFor();
  owner.on('dialog',d=>d.accept());await owner.getByRole('button',{name:/^Resetuj hasło:/}).click();await owner.locator('#resetPassword').fill(password);await owner.getByRole('button',{name:'Zapisz nowe hasło',exact:true}).click();await owner.locator('#resetError').filter({hasText:'To hasło było już'}).waitFor();await owner.locator('#resetPassword').fill('My reset test phrase!');await owner.getByRole('button',{name:'Zapisz nowe hasło',exact:true}).click();await owner.getByText('Hasło zostało zresetowane.',{exact:true}).waitFor();
+ assert(!await owner.locator('#resetDialog').isVisible(),'Reset dialog must close after saving');
  const resetPassword=await owner.locator('#newPassword').inputValue();assert.notEqual(resetPassword,password);
  assert.equal((await recipient.request.get(base+src)).status(),401);
  await recipient.reload();await recipient.locator('#lockPass').waitFor();
