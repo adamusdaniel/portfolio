@@ -44,6 +44,7 @@ try {
  assert.equal((await post('login',{password:s.password})).status(),200);
  const image=await (await post('images',{base64:png.toString('base64')})).json();assert.equal((await post('content',fixture(image.url))).status(),200);
  const page=await owner.newPage();await page.goto(base+'/owner/');await page.locator('#panel').waitFor();
+ for(const width of [375,768,1440]){await page.setViewportSize({width,height:950});assert(!await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),'Owner overflow at '+width);}
  const bundle=path.join(temp,'private-case.json');await writeFile(bundle,JSON.stringify(data));
  await page.locator('summary').click();await page.locator('#bundle').setInputFiles(bundle);await page.locator('#upload button').click();await page.getByText(/^Projekty wgrane\./).waitFor();
  for(const text of [JSON.stringify(data),'PORTFOLIO_BUNDLE_V1:'+gzipSync(JSON.stringify(data)).toString('base64')]) {
