@@ -7,3 +7,6 @@ work/
 .env.*
 .netlify/
 server/deployment.mjs
+
+__pycache__/
+*.pyc

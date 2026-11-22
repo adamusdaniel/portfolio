@@ -44,7 +44,7 @@ try {
  const password=await owner.locator('#newPassword').inputValue();assert.equal(password,'My browser test phrase!');
  for(const width of [375,768,1440]) {
   await owner.setViewportSize({width,height:950});
-  assert(!await owner.evaluate(()=>document.documentElement.scrollWidth>innerWidth), 'Owner overflow at '+width);
+  assert(!await owner.evaluate(()=>document.documentElement.scrollWidth>innerWidth), 'Owner overflow at '+width+' '+JSON.stringify(await owner.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).map(e=>({tag:e.tagName,id:e.id,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right})).slice(0,25))));
  }
  if(process.env.PORTFOLIO_TEST_SCREENSHOTS){await mkdir('work',{recursive:true});await owner.locator('.grant-table').scrollIntoViewIfNeeded();await owner.screenshot({path:'work/owner-table.png'});}
  assert.equal(await owner.locator('.grant-table tbody tr').count(),1);assert.equal(await owner.locator('.grant-table thead th').count(),6);

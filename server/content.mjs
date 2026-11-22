@@ -31,7 +31,14 @@ export function validateContent(data) {
     else if(value && typeof value==='object') Object.values(value).forEach(walk);
     else if(typeof value==='string') {
       if(value.startsWith('private/') && !Object.hasOwn(data.img,value)) throw new Error('Brak prywatnej grafiki.');
-      if (/data:image|<img|<iframe|<script|<video|<audio|<source|<object|<embed|on\w+\s*=|url\s*\(/i.test(value)) throw new Error('Użyj obrazów z img, bez osadzonego kodu lub mediów w HTML.');
+      // Legacy persona portraits may remain inline, but only at protected,
+      // explicitly declared image URLs and with plain alt text.
+      const checked=value.replace(/<img src="(\/api\/private\/images\/[a-f0-9]{64})" alt="[^"<>]*">/g,tag=>{
+        const url=tag.match(/src="([^"]+)"/)[1];
+        if(!Object.values(data.img).includes(url)) throw new Error('Brak prywatnej grafiki osadzonej.');
+        return '';
+      });
+      if (/data:image|<img|<iframe|<script|<video|<audio|<source|<object|<embed|on\w+\s*=|url\s*\(/i.test(checked)) throw new Error('Użyj obrazów z img, bez osadzonego kodu lub mediów w HTML.');
     }
   }
   walk(data.cards); walk(data.cases);

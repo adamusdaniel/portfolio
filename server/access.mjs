@@ -1,3 +1,4 @@
+import {authorizeSync} from './sync.mjs';
 import {validateContent, imageType} from './content.mjs';
 import { createHash, createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -8,7 +9,7 @@ const headers = {'Cache-Control':'private, no-store, max-age=0', 'Netlify-CDN-Ca
 export function ownerHash(password, salt = randomBytes(16).toString('hex')) {
   return `scrypt:${salt}:${scryptSync(password, salt, 64).toString('hex')}`;
 }
-export function createAccess({store, env, now = Date.now, archive}) {
+export function createAccess({store, env, now = Date.now, archive, verifySync = authorizeSync}) {
   const cookieName = role => role === 'owner' ? '__Host-portfolio_owner' : '__Host-portfolio_access';
   const sign = value => createHmac('sha256', env.ACCESS_SESSION_SECRET).update(value).digest('base64url');
   const ownerVersion = () => digest(env.ACCESS_OWNER_PASSWORD_HASH);
@@ -61,10 +62,14 @@ export function createAccess({store, env, now = Date.now, archive}) {
   }
   return async function handle(req) {
     try {
-      const url = new URL(req.url), path = url.pathname.replace(/\/$/, '');
+      const url = new URL(req.url);
+      let path = url.pathname.replace(/\/$/, '');
+      const syncTarget={'/api/sync/images':'/api/owner/images','/api/sync/content':'/api/owner/content/import'}[path];
+      if(path.startsWith('/api/sync/') && (!syncTarget || req.method!=='POST')) fail(404,'Not found.');
+      if(syncTarget){try{await verifySync(req);}catch{fail(401,'Publisher identity rejected.');}path=syncTarget;}
       if (!env.ACCESS_SESSION_SECRET || env.ACCESS_SESSION_SECRET.length < 43 || !/^scrypt:[a-f0-9]{32}:[a-f0-9]{128}$/.test(env.ACCESS_OWNER_PASSWORD_HASH || '')) fail(503, 'Private access is not configured yet.');
       if (req.method !== 'GET' && req.method !== 'POST') fail(405, 'Method not allowed.');
-      if (req.method === 'POST' && (req.headers.get('origin') !== url.origin || req.headers.get('sec-fetch-site') === 'cross-site')) fail(403, 'Nieprawidłowe źródło żądania.');
+      if (!syncTarget && req.method === 'POST' && (req.headers.get('origin') !== url.origin || req.headers.get('sec-fetch-site') === 'cross-site')) fail(403, 'Nieprawidłowe źródło żądania.');
       if (req.method === 'POST' && (path === '/api/access/login' || path === '/api/owner/login')) {
         const {password} = await body(req);
         if (typeof password !== 'string' || password.length > 512) fail(401, 'Invalid password or inactive access.');
@@ -92,7 +97,7 @@ export function createAccess({store, env, now = Date.now, archive}) {
       }
       if (path.startsWith('/api/owner/')) {
         const s = readSession(req, 'owner');
-        if (!s || s.version !== ownerVersion()) fail(401, 'Zaloguj się do panelu właściciela.');
+        if (!syncTarget && (!s || s.version !== ownerVersion())) fail(401, 'Zaloguj się do panelu właściciela.');
         if (req.method === 'POST' && path === '/api/owner/images') {
           const data=await body(req, 4200000);
           if(typeof data.base64!=='string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(data.base64)) fail(400,'Nieprawidłowy obraz.');
@@ -108,6 +113,11 @@ export function createAccess({store, env, now = Date.now, archive}) {
           const image=await store.getWithMetadata('images-'+ownerImage[1],{type:'arrayBuffer'}) || (archive?await archive.image(ownerImage[1]):null);
           if(!image)fail(404,'Nie znaleziono obrazu.');
           return new Response(image.data,{headers:{'Content-Type':image.metadata.contentType,'Cache-Control':'private, no-store, max-age=0','X-Content-Type-Options':'nosniff'}});
+        }
+        if(req.method==='GET' && path==='/api/owner/content') {
+          const uploaded=await store.get('content-current',{type:'json'}) || {cards:[],cases:{},img:{},media:{}};
+          const existing=archive?await archive.content():{cards:[],cases:{},img:{},media:{}};
+          return json({cards:[...existing.cards.filter(card=>!uploaded.cards.some(c=>c.slug===card.slug)),...uploaded.cards],cases:{...existing.cases,...uploaded.cases},img:{...existing.img,...uploaded.img},media:{...existing.media,...uploaded.media}});
         }
         if(req.method==='GET' && path==='/api/owner/projects') {
           const uploaded=await store.get('content-current',{type:'json'});

@@ -1,0 +1,24 @@
+name: Publish private portfolio
+on:
+  push:
+    branches: [v2]
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: private-portfolio-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'adamusdaniel/portfolio-private' && github.ref == 'refs/heads/v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Validate source files
+        run: python3 publish.py --check
+      - name: Publish to protected Netlify storage
+        run: python3 publish.py

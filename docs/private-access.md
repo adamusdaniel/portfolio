@@ -120,3 +120,32 @@ Panel przyjmuje też prywatny pakiet `headerUpdates` (lista obiektów `slug`, `i
 ### Proste wgrywanie grafiki nagłówka
 
 Po zalogowaniu w sekcji **Grafika w nagłówku projektu** wybierz projekt z listy, wskaż PNG/JPG/WebP do 3 MB i kliknij **Zapisz nagłówek**. Panel pokazuje podgląd i potwierdzenie zapisu. Nie potrzebujesz Terminala, JSON ani pakietu. Odśwież otwartą kartę portfolio po zapisaniu. Lista i podgląd wymagają sesji właściciela; plik jest wgrywany bez rekompresji. Na liście są wyłącznie istniejące projekty. Jeśli brakuje projektu, najpierw wgraj jego treść. Starszy pakiet używający skrótu `tauron` aktualizuje projekt `tauron-search`.
+
+## Prywatne repozytorium — edycja przez GitHub Desktop
+
+Obsługiwana nazwa: **adamusdaniel/portfolio-private**, widoczność **Private**, branch **v2**. To osobne repozytorium; publiczne `adamusdaniel/portfolio` pozostaje bez prywatnych źródeł. Nie zmieniamy `main`.
+
+### Pierwsze uruchomienie
+
+1. W GitHub Desktop wybierz lokalne `portfolio-private`. Jeśli nie jest jeszcze na GitHubie, kliknij **Publish repository** i zaznacz **Keep this code private**. Właściciel: `adamusdaniel`. Na stronie GitHuba sprawdź napis **Private**.
+2. W **Current Branch → New Branch** utwórz **v2**. Publikowanie działa tylko z tej gałęzi.
+3. Zaloguj się do panelu portfolio, kliknij **Pobierz projekty do prywatnego repozytorium**. ZIP powstaje w Twojej przeglądarce z aktualnej prywatnej zawartości Netlify i oryginalnych grafik. Żadne hasła ani tokeny nie trafiają do ZIP-a. Panel pokazuje postęp i błędy.
+4. Rozpakuj ZIP. W Finderze włącz pokazywanie ukrytych plików skrótem **⌘⇧.**, aby widzieć folder `.github`. Skopiuj zawartość do folderu lokalnego repozytorium `portfolio-private` na branchu **v2**. Kopiuj także `.github`, ale nigdy nie przenoś ani nie zastępuj katalogu `.git` z innego repozytorium.
+5. W GitHub Desktop sprawdź listę zmian, zrób commit i **Push origin / Publish branch**. W GitHub → **Actions** ma pojawić się zielony workflow **Publish private portfolio**. Jeśli GitHub wymaga włączenia Actions, zezwól na uruchomienie dołączonego workflow w tym prywatnym repozytorium. Nie włączaj płatnego budżetu.
+6. Odśwież portfolio i odblokuj All projects swoim działającym hasłem. Pierwszy rzeczywisty zielony run potwierdza synchronizację; samo wdrożenie kodu strony tego nie potwierdza.
+
+Jeśli repozytorium nie pojawia się w podłączonym do czatu GitHubie, integracja może mieć dostęp tylko do starego repozytorium. To nie blokuje synchronizacji ani własnej pracy w GitHub Desktop; udostępnienie integracji nowego prywatnego repozytorium to osobna decyzja właściciela.
+
+### Codzienna praca
+
+Każdy projekt ma osobny `projects/<slug>/project.json` oraz folder `images`. `card` opisuje kartę listy, `case` opisuje wnętrze case study, `img` mapuje prywatne klucze na lokalne pliki; opcjonalne `media` zawiera podpisy i rozmiary. Zmieniasz teksty lub podmieniasz grafiki, zapisujesz commit i robisz push **v2**. `card.thumb` i `case.hero` mogą wskazywać tę samą grafikę. Przy zamianie okładki typograficznej na obraz usuń `card.cover`/`card.coverLabel` i ustaw `card.thumb`. Plik README z eksportu opisuje szczegóły.
+
+Po uruchomieniu synchronizacji repozytorium jest źródłem treści: kolejny push może zastąpić edycję tych samych projektów wykonaną w panelu. Hasła, daty i rekordy odbiorców pozostają niezależne. Usunięcie folderu celowo nie usuwa opublikowanego projektu. Publikacja jest addytywna, a błąd walidacji pozostawia poprzednią treść. Nie uruchamiaj równocześnie ręcznej edycji w panelu i pushu; zapis warunkowy odrzuca kolizję zamiast nadpisywać ją bez ostrzeżenia. W razie błędu można ponowić workflow z Actions.
+
+### Zabezpieczenie i koszty
+
+GitHub Actions uzyskuje krótkotrwały token OIDC i wysyła go w nagłówku Authorization. Netlify sprawdza podpis RS256 z oficjalnego JWKS GitHuba, issuer, audience, ważność, maksymalny wiek 10 minut oraz dokładną nazwę repozytorium, widoczność Private, branch v2, ścieżkę workflow `.github/workflows/publish.yml`, zdarzenie push/workflow_dispatch i runner GitHuba. Repozytorium publiczne, fork, inny branch lub workflow są odrzucane. Bez sekretu do kopiowania, tokena administratora Netlify ani hasła właściciela w Actions.
+
+Endpointy `/api/sync/images` i `/api/sync/content` pozwalają wyłącznie wgrywać obrazy i aktualizować prywatną treść. Nie przyznają sesji czytelnikowi ani dostępu do haseł i rekordów odbiorców. Bieżące API treści i obrazów nadal wymaga sesji odbiorcy; eksport i podglądy właściciela wymagają jego osobnej sesji.
+
+Workflow używa `contents: read` i `id-token: write`; checkout jest przypięty do pełnego SHA i nie zapisuje poświadczeń w Git. Nie uruchamia npm ani kodu pobieranego z publicznego repozytorium. Nie tworzymy nowego hostingu ani płatnej usługi. GitHub Actions zużywa limit dostępny w planie konta (sprawdź GitHub → Settings → Billing and licensing / Budgets and alerts). Nie ustawiaj płatnego budżetu. Limity Netlify Functions, transferu i magazynu nadal obowiązują. Push treści nie wymaga nowego deployu publicznej strony.

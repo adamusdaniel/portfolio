@@ -34,3 +34,5 @@
 .owner textarea{width:100%;min-height:140px;padding:14px;border:1px solid var(--line);border-radius:12px;font:14px/1.5 monospace;resize:vertical}
 
 #headerProject{max-width:100%;padding:12px;border:1px solid #aaa;border-radius:10px;background:#454242;color:inherit;font:inherit}#headerStatus{overflow-wrap:anywhere}
+.owner p{overflow-wrap:anywhere}.owner .btn{max-width:100%;padding-inline:24px}.owner .btn>span{min-width:0;overflow-wrap:anywhere}
+.owner .lock-form{min-width:0;grid-template-columns:minmax(0,1fr)}#headerProject{width:100%;min-width:0}

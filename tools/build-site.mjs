@@ -15,3 +15,6 @@ for(const name of files) {
 }
 await cp(path.join(root,'owner'),path.join(out,'owner'),{recursive:true});
 console.log('Built public site in dist/ (only Buchfix, Loyalty and Moovit; private assets and legacy pages excluded).');
+
+await mkdir(path.join(out,"owner/repository"),{recursive:true});
+for(const [source,target] of [["publish.py","publish.py"],[".github/workflows/publish.yml","publish-workflow.yml"],["README.md","README.md"],["gitignore.txt","gitignore.txt"]]) await cp(path.join(root,"tools/private-repo",source),path.join(out,"owner/repository",target));

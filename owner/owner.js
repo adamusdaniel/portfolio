@@ -126,6 +126,7 @@
       $('notice').textContent='Nagłówek zapisany.';
     }catch(error){$('headerStatus').textContent=error.message;throw error;}
   });});
+  $('exportRepository').addEventListener('click',()=>run(async()=>{try{await window.exportPrivateRepository(api,$('repositoryStatus'));}catch(error){$('repositoryStatus').textContent=error.message;throw error;}}));
   $('bundleText').addEventListener('input',()=>{if($('bundleText').value.trim()) $('bundle').value='';});
   $('bundle').addEventListener('change',()=>{if($('bundle').files.length) $('bundleText').value='';});
   async function decodeBundle(text){
