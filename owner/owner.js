@@ -1,6 +1,6 @@
 (() => {
   const $ = id => document.getElementById(id);
-  let grants = [], busy = false, resetGrant = null;
+  let grants = [], busy = false, resetGrant = null, projects = [], previewUrl = null;
   $('privateLink').textContent = location.origin + '/#all-projects';
   async function api(path, data) {
     const response = await fetch('/api/owner/' + path, {method:data?'POST':'GET',credentials:'same-origin',cache:'no-store',headers:data?{'Content-Type':'application/json'}:{},body:data?JSON.stringify(data):undefined});
@@ -75,7 +75,7 @@
     }
   }
   function reveal(password) { $('newPassword').value=password; $('secretBox').hidden=false; $('newPassword').focus(); }
-  async function load() { grants=(await api('grants')).grants; $('login').hidden=true; $('panel').hidden=false; render(); }
+  async function load() { grants=(await api('grants')).grants; $('login').hidden=true; $('panel').hidden=false; render(); await loadProjects(); }
   async function run(fn) {
     if(busy) return; busy=true; $('notice').textContent='';updateTableBusy();
     document.querySelectorAll('button').forEach(b=>b.disabled=true);
@@ -93,6 +93,38 @@
     const result=await api(`grants/${g.id}/reset`,{version:g.version,password});
     closeReset(); hideSecret(); await load(); reveal(result.password);
     $('notice').textContent='Hasło zostało zresetowane.';
+  });});
+  function showHeader(url){$('headerPreview').hidden=!url;if(url)$('headerPreview').src=url;else $('headerPreview').removeAttribute('src');}
+  async function loadProjects(){
+    const selected=$('headerProject').value;
+    projects=(await api('projects')).projects;
+    $('headerProject').replaceChildren(element('option','Wybierz projekt'));
+    $('headerProject').firstChild.value='';
+    for(const p of projects){const option=element('option',p.title);option.value=p.slug;$('headerProject').append(option);}
+    if(projects.some(p=>p.slug===selected))$('headerProject').value=selected;
+    if(!$('headerFile').files.length)showHeader(projects.find(p=>p.slug===$('headerProject').value)?.header);
+  }
+  $('headerProject').addEventListener('change',()=>{if(!$('headerFile').files.length)showHeader(projects.find(p=>p.slug===$('headerProject').value)?.header);$('headerStatus').textContent='';});
+  $('headerFile').addEventListener('change',()=>{
+    if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}
+    const file=$('headerFile').files[0];
+    if(file){previewUrl=URL.createObjectURL(file);showHeader(previewUrl);}else showHeader(projects.find(p=>p.slug===$('headerProject').value)?.header);
+    $('headerStatus').textContent='';
+  });
+  $('headerUpload').addEventListener('submit',e=>{e.preventDefault();run(async()=>{
+    const file=$('headerFile').files[0],slug=$('headerProject').value;
+    try{
+      if(!file || !projects.some(p=>p.slug===slug))throw Error('Wybierz projekt i grafikę.');
+      if(file.size>3000000)throw Error('Grafika musi mieć maksymalnie 3 MB.');
+      $('headerStatus').textContent='Wgrywanie oryginalnego pliku…';
+      const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=()=>reject(Error('Nie można odczytać pliku.'));reader.readAsDataURL(file);});
+      const key='private/'+slug+'/header',image=await api('images',{base64});
+      await api('content/headers',{headerUpdates:[{slug,image:key}],img:{[key]:image.url}});
+      $('headerFile').value='';if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}
+      await loadProjects();
+      $('headerStatus').textContent='Nagłówek zapisany. Odśwież kartę portfolio, aby zobaczyć zmianę.';
+      $('notice').textContent='Nagłówek zapisany.';
+    }catch(error){$('headerStatus').textContent=error.message;throw error;}
   });});
   $('bundleText').addEventListener('input',()=>{if($('bundleText').value.trim()) $('bundle').value='';});
   $('bundle').addEventListener('change',()=>{if($('bundle').files.length) $('bundleText').value='';});
@@ -121,7 +153,7 @@
       $('notice').textContent='Wgrywanie obrazu: '+key;
       data.img[key]=(await api('images',{base64:m[1]})).url;
     }
-    await api(data.headerUpdates?'content/headers':'content/import',data); $('bundle').value='';$('bundleText').value='';
+    await api(data.headerUpdates?'content/headers':'content/import',data); await loadProjects(); $('bundle').value='';$('bundleText').value='';
     $('notice').textContent='Projekty wgrane. Sprawdź sekcję All projects przy użyciu aktywnego hasła.';
   });});
   $('refresh').addEventListener('click',()=>run(load));

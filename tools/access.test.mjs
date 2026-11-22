@@ -242,3 +242,18 @@ test('header-only imports preserve narratives, require owner, and store original
  assert.equal(response.status,200);
  const after=await s.store.get('content-current');assert.equal(after.cards.length,2);assert.deepEqual(after.cases.archived,{...archived.cases.archived,hero:'private/new-header.png'});
 });
+
+test('legacy header package resolves TAURON slug and owner catalog stays protected',async()=>{
+ const s=setup(),o=await owner(s),url='/api/'+await image(s,o),data=fixture(url);
+ data.cards[0].slug='tauron-search';data.cases['tauron-search']=data.cases['test-only'];delete data.cases['test-only'];
+ await s.request('owner/content',{cookie:o,data});
+ assert.equal((await s.request('owner/projects')).status,401);
+ const update={headerUpdates:[{slug:'tauron',image:'private/header.png'}],img:{'private/header.png':url}};
+ assert.equal((await s.request('owner/content/headers',{cookie:o,data:update})).status,200);
+ assert.equal((await s.store.get('content-current')).cases['tauron-search'].hero,'private/header.png');
+ const list=await (await s.request('owner/projects',{cookie:o})).json();assert.equal(list.projects[0].slug,'tauron-search');
+ const preview=list.projects[0].header.replace('/api/','');
+ assert.equal((await s.request(preview)).status,401);
+ const a=await create(s,o),recipient=s.cookie(await login(s,a.password));assert.equal((await s.request(preview,{cookie:recipient})).status,401);
+ assert.deepEqual(Buffer.from(await (await s.request(preview,{cookie:o})).arrayBuffer()),png);
+});

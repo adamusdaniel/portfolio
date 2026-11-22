@@ -103,6 +103,18 @@ export function createAccess({store, env, now = Date.now, archive}) {
           await store.set(`images-${id}`,bytes,{metadata:{contentType:type},onlyIfNew:true});
           return json({url:`/api/private/images/${id}`});
         }
+        const ownerImage=path.match(/^\/api\/owner\/images\/([a-f0-9]{64})$/);
+        if(req.method==='GET' && ownerImage){
+          const image=await store.getWithMetadata('images-'+ownerImage[1],{type:'arrayBuffer'}) || (archive?await archive.image(ownerImage[1]):null);
+          if(!image)fail(404,'Nie znaleziono obrazu.');
+          return new Response(image.data,{headers:{'Content-Type':image.metadata.contentType,'Cache-Control':'private, no-store, max-age=0','X-Content-Type-Options':'nosniff'}});
+        }
+        if(req.method==='GET' && path==='/api/owner/projects') {
+          const uploaded=await store.get('content-current',{type:'json'});
+          const existing=archive?await archive.content():{cards:[],cases:{},img:{}};
+          const cards=[...existing.cards.filter(card=>!uploaded?.cards.some(c=>c.slug===card.slug)),...(uploaded?.cards||[])];
+          return json({projects:cards.map(card=>{const value=uploaded?.cases[card.slug]||existing.cases[card.slug];const images={...existing.img,...uploaded?.img};return {slug:card.slug,title:card.title,header:value?.hero?images[value.hero]?.replace('/api/private/images/','/api/owner/images/')||null:null};})});
+        }
         if(req.method==='POST' && path==='/api/owner/content/headers') {
           const data=await body(req,2000000);
           if(!data || !Array.isArray(data.headerUpdates) || !data.headerUpdates.length || data.headerUpdates.length>20 || !data.img || typeof data.img!=='object') fail(400,'Nieprawidłowy pakiet nagłówków.');
@@ -111,7 +123,8 @@ export function createAccess({store, env, now = Date.now, archive}) {
           const previous=current?.data || {cards:[],cases:{},img:{},media:{}};
           const archived=archive?await archive.content():{cards:[],cases:{},img:{},media:{}};
           const merged=structuredClone(previous);
-          for(const update of data.headerUpdates) {
+          for(const original of data.headerUpdates) {
+            const update=original && {...original,slug:original.slug==='tauron'?'tauron-search':original.slug};
             if(!update || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(update.slug||'') || typeof update.image!=='string' || !update.image.startsWith('private/') || !Object.hasOwn(data.img,update.image)) fail(400,'Nieprawidłowy nagłówek.');
             const value=merged.cases[update.slug] || archived.cases[update.slug];
             const card=merged.cards.find(c=>c.slug===update.slug) || archived.cards.find(c=>c.slug===update.slug);

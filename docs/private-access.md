@@ -116,3 +116,7 @@ Testy przeglądarkowe wymagają Chromium (`/usr/bin/chromium`) i Playwright; tes
 ### Podmiana samych nagłówków
 
 Panel przyjmuje też prywatny pakiet `headerUpdates` (lista obiektów `slug`, `image`) oraz `img` z oryginalnymi obrazami jako data URL. Aktualizuje wyłącznie `hero` istniejących prywatnych projektów, zachowując karty, narrację i dostępy. Projekt musi wcześniej istnieć; brak któregokolwiek zatrzymuje zapis całej zmiany. Obrazy są przechowywane bez rekompresji. Operacja wymaga sesji właściciela i używa warunkowego zapisu, także dla projektów przeniesionych z archiwum.
+
+### Proste wgrywanie grafiki nagłówka
+
+Po zalogowaniu w sekcji **Grafika w nagłówku projektu** wybierz projekt z listy, wskaż PNG/JPG/WebP do 3 MB i kliknij **Zapisz nagłówek**. Panel pokazuje podgląd i potwierdzenie zapisu. Nie potrzebujesz Terminala, JSON ani pakietu. Odśwież otwartą kartę portfolio po zapisaniu. Lista i podgląd wymagają sesji właściciela; plik jest wgrywany bez rekompresji. Na liście są wyłącznie istniejące projekty. Jeśli brakuje projektu, najpierw wgraj jego treść. Starszy pakiet używający skrótu `tauron` aktualizuje projekt `tauron-search`.

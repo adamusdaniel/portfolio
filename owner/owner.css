@@ -32,3 +32,5 @@
 #resetDialog{color:var(--text)}
 
 .owner textarea{width:100%;min-height:140px;padding:14px;border:1px solid var(--line);border-radius:12px;font:14px/1.5 monospace;resize:vertical}
+
+#headerProject{max-width:100%;padding:12px;border:1px solid #aaa;border-radius:10px;background:#454242;color:inherit;font:inherit}#headerStatus{overflow-wrap:anywhere}

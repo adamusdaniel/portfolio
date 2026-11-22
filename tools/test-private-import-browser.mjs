@@ -49,10 +49,18 @@ try {
  const headerKey='private/test-header.png';
  await page.locator('#bundleText').fill(JSON.stringify({headerUpdates:[{slug,image:headerKey}],img:{[headerKey]:'data:image/png;base64,'+headerBytes.toString('base64')}}));
  await page.locator('#upload button').click();await page.getByText(/^Projekty wgrane\./).waitFor();assert.equal(await page.locator('#bundleText').inputValue(),'');
+ await page.locator('#headerProject').selectOption(slug);
+ await page.locator('#headerFile').setInputFiles({name:'header.png',mimeType:'image/png',buffer:headerBytes});
+ await page.locator('#headerUpload button').click();await page.locator('#headerStatus').filter({hasText:'Nagłówek zapisany.'}).waitFor();
+ await page.locator('#headerPreview').evaluate(img=>img.decode());
+ const projectList=await (await owner.request.get(base+'/api/owner/projects')).json();
+ const ownerImage=projectList.projects.find(p=>p.slug===slug).header;
+ assert.equal((await (await browser.newContext({ignoreHTTPSErrors:true})).request.get(base+ownerImage)).status(),401);
+ assert.deepEqual(Buffer.from(await (await owner.request.get(base+ownerImage)).body()),headerBytes);
  const grant=await (await post('grants',{label:'Import test',password:'Import123',noExpiry:true})).json();
  const recipient=await browser.newContext({ignoreHTTPSErrors:true});
  assert.equal((await recipient.request.post(base+'/api/access/login',{headers:{Origin:base},data:{password:grant.password}})).status(),200);
- const content=await (await recipient.request.get(base+'/api/private/content')).json();assert(content.cases['test-only']);assert(content.cases[slug]);assert.equal(content.cards.length,2);assert.equal(content.cases[slug].hero,headerKey);assert.deepEqual(content.cases[slug].blocks,c.blocks);const headerUrl=content.img[headerKey];assert.deepEqual(Buffer.from(await (await recipient.request.get(base+headerUrl)).body()),headerBytes);
+ const content=await (await recipient.request.get(base+'/api/private/content')).json();assert(content.cases['test-only']);assert(content.cases[slug]);assert.equal(content.cards.length,2);assert.equal(content.cases[slug].hero,'private/'+slug+'/header');assert.deepEqual(content.cases[slug].blocks,c.blocks);const headerUrl=content.img[content.cases[slug].hero];assert.deepEqual(Buffer.from(await (await recipient.request.get(base+headerUrl)).body()),headerBytes);
  const view=await recipient.newPage(),errors=[];view.on('pageerror',e=>errors.push(e.message));await view.route('https://fonts.googleapis.com/**',r=>r.abort());
  for(const width of [375,390,768,1280,1440]) {
   await view.setViewportSize({width,height:950});await view.goto(base+'/#private/'+slug);await view.locator('#caseRoot h1').waitFor();assert.equal(await view.locator('#caseRoot h1').textContent(),c.title);
