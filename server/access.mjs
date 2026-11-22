@@ -46,7 +46,7 @@ export function createAccess({store, env, now = Date.now, archive}) {
   // It is independent of the session key, so rotating sessions preserves passwords.
   const passwordIndex = password => 'passwords-'+scryptSync(password,'portfolio-recipient-index-v1',32).toString('hex');
   async function reservePassword(password,id,version) {
-    if(typeof password!=='string' || password.length<12 || password.length>128 || password!==password.trim() || /^[a-f0-9]{32}\./.test(password)) fail(400,'Wpisz własne hasło od 12 do 128 znaków, bez spacji na początku i końcu.');
+    if(typeof password!=='string' || password.length<6 || password.length>128 || password!==password.trim() || /^[a-f0-9]{32}\./.test(password)) fail(400,'Wpisz własne hasło od 6 do 128 znaków, bez spacji na początku i końcu.');
     const hash=ownerHash(password);
     const result=await store.setJSON(passwordIndex(password),{id,version},{onlyIfNew:true});
     if(!result.modified) fail(409,'To hasło było już przypisane do dostępu. Wybierz inne.');

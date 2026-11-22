@@ -185,3 +185,16 @@ test('concurrent reset and deletion cannot resurrect deleted access',async()=>{
  assert.equal((await login(s,a.password)).status,401);assert.equal((await login(s,'Delete race new phrase!')).status,401);
  assert.equal((await s.store.get(`grants-${a.grant.id}`)).deleted,true);
 });
+
+
+test('recipient minimum length is six for creation and reset',async()=>{
+ const s=setup(),o=await owner(s);
+ const bad=await s.request('owner/grants',{cookie:o,data:{label:'Too short',password:'abcde'}});assert.equal(bad.status,400);
+ const a=await create(s,o,'Six characters',undefined,'abcdef');assert.equal((await login(s,'abcdef')).status,200);
+ const shortReset=await s.request(`owner/grants/${a.grant.id}/reset`,{cookie:o,data:{version:a.grant.version,password:'12345'}});assert.equal(shortReset.status,400);
+ assert.equal((await login(s,'abcdef')).status,200);
+ const reset=await s.request(`owner/grants/${a.grant.id}/reset`,{cookie:o,data:{version:a.grant.version,password:'ghijkl'}});assert.equal(reset.status,200);
+ assert.equal((await login(s,'abcdef')).status,401);assert.equal((await login(s,'ghijkl')).status,200);
+ const html=await readFile(new URL('../owner/index.html',import.meta.url),'utf8');
+ assert.match(html,/id="recipientPassword"[^>]*minlength="6"/);assert.match(html,/id="resetPassword"[^>]*minlength="6"/);
+});
