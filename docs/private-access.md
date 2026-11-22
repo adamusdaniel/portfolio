@@ -112,3 +112,7 @@ node tools/test-portfolio-browser.cjs
 ```
 
 Testy przeglądarkowe wymagają Chromium (`/usr/bin/chromium`) i Playwright; test HTTPS również OpenSSL. Testy API uruchamiają lokalny emulator oficjalnego SDK Blobs oraz magazyn testowy w pamięci. Emulator SDK 10.7.13 pomija ETag w GET: wyłącznie transport testowy uzupełnia go wartością z LIST; warunki zapisu nadal sprawdza emulator. Kod produkcyjny odmawia aktualizacji bez ETag. Nie używają prawdziwego konta Netlify ani materiałów portfolio jako prywatnych fixtures. Limit prób jest wykonywany przez platformę Netlify i wymaga osobnej kontroli po deployu. Przejście lokalnych testów nie potwierdza działającego wdrożenia ani konfiguracji sekretów w Netlify.
+
+### Podmiana samych nagłówków
+
+Panel przyjmuje też prywatny pakiet `headerUpdates` (lista obiektów `slug`, `image`) oraz `img` z oryginalnymi obrazami jako data URL. Aktualizuje wyłącznie `hero` istniejących prywatnych projektów, zachowując karty, narrację i dostępy. Projekt musi wcześniej istnieć; brak któregokolwiek zatrzymuje zapis całej zmiany. Obrazy są przechowywane bez rekompresji. Operacja wymaga sesji właściciela i używa warunkowego zapisu, także dla projektów przeniesionych z archiwum.

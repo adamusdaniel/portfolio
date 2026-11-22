@@ -103,6 +103,37 @@ export function createAccess({store, env, now = Date.now, archive}) {
           await store.set(`images-${id}`,bytes,{metadata:{contentType:type},onlyIfNew:true});
           return json({url:`/api/private/images/${id}`});
         }
+        if(req.method==='POST' && path==='/api/owner/content/headers') {
+          const data=await body(req,2000000);
+          if(!data || !Array.isArray(data.headerUpdates) || !data.headerUpdates.length || data.headerUpdates.length>20 || !data.img || typeof data.img!=='object') fail(400,'Nieprawidłowy pakiet nagłówków.');
+          const current=await store.getWithMetadata('content-current',{type:'json'});
+          if(current && !current.etag) fail(503,'Nie można bezpiecznie zapisać zmiany.');
+          const previous=current?.data || {cards:[],cases:{},img:{},media:{}};
+          const archived=archive?await archive.content():{cards:[],cases:{},img:{},media:{}};
+          const merged=structuredClone(previous);
+          for(const update of data.headerUpdates) {
+            if(!update || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(update.slug||'') || typeof update.image!=='string' || !update.image.startsWith('private/') || !Object.hasOwn(data.img,update.image)) fail(400,'Nieprawidłowy nagłówek.');
+            const value=merged.cases[update.slug] || archived.cases[update.slug];
+            const card=merged.cards.find(c=>c.slug===update.slug) || archived.cards.find(c=>c.slug===update.slug);
+            if(!value || !card) fail(400,'Najpierw wgraj projekt: '+update.slug);
+            if(!merged.cases[update.slug]) {
+              merged.cases[update.slug]=structuredClone(value);
+              merged.cards.push(structuredClone(card));
+              merged.img={...archived.img,...merged.img};
+              merged.media={...archived.media,...merged.media};
+            }
+            merged.cases[update.slug].hero=update.image;
+          }
+          for(const [key,url] of Object.entries(data.img)) {
+            if(!key.startsWith('private/') || typeof url!=='string' || !/^\/api\/private\/images\/[a-f0-9]{64}$/.test(url) || !await store.getMetadata('images-'+url.split('/').pop())) fail(400,'Brak wgranego obrazu.');
+            merged.img[key]=url;
+          }
+          try {validateContent(merged);}catch(e){fail(400,e.message);}
+          if(JSON.stringify(merged).length>2000000) fail(413,'Łączny tekst projektów przekracza limit 2 MB.');
+          const result=await store.setJSON('content-current',merged,current?{onlyIfMatch:current.etag}:{onlyIfNew:true});
+          if(!result.modified) fail(409,'Projekty zmieniły się podczas importu. Wgraj pakiet ponownie.');
+          return json({ok:true});
+        }
         if (req.method === 'POST' && ['/api/owner/content','/api/owner/content/import'].includes(path)) {
           const data=await body(req,2000000);
           try { validateContent(data); } catch(e) { fail(400,e.message); }

@@ -219,3 +219,26 @@ test('additive import uses conditional writes to preserve simultaneous content c
  assert.deepEqual(responses.map(r=>r.status).sort(),[200,409]);
  assert.equal((await s.store.get('content-current')).cards.length,1);
 });
+
+test('header-only imports preserve narratives, require owner, and store original image bytes',async()=>{
+ const s=setup(),o=await owner(s),url='/api/'+await image(s,o),original=fixture(url);
+ await s.request('owner/content',{cookie:o,data:original});
+ const payload={headerUpdates:[{slug:'test-only',image:'private/new-header.png'}],img:{'private/new-header.png':url}};
+ assert.equal((await s.request('owner/content/headers',{data:payload})).status,401);
+ const a=await create(s,o),recipient=s.cookie(await login(s,a.password));
+ assert.equal((await s.request('owner/content/headers',{cookie:recipient,data:payload})).status,401);
+ assert.equal((await s.request('owner/content/headers',{cookie:o,data:payload})).status,200);
+ const saved=await s.store.get('content-current');
+ assert.deepEqual(saved.cases['test-only'],{...original.cases['test-only'],hero:'private/new-header.png'});
+ assert.deepEqual(saved.cards,original.cards);
+ assert.equal((await s.request(url.replace('/api/',''))).status,401);
+ assert.deepEqual(Buffer.from(await (await s.request(url.replace('/api/',''),{cookie:recipient})).arrayBuffer()),png);
+ const missing={...payload,headerUpdates:[{slug:'missing',image:'private/new-header.png'}]};
+ assert.equal((await s.request('owner/content/headers',{cookie:o,data:missing})).status,400);
+ assert.deepEqual(await s.store.get('content-current'),saved);
+ const archived=fixture(url);archived.cards[0].slug='archived';archived.cases.archived=archived.cases['test-only'];delete archived.cases['test-only'];
+ const handler=createAccess({store:s.store,env:s.env,now:s.now,archive:{content:async()=>archived}});
+ const response=await handler(new Request('https://portfolio.test/api/owner/content/headers',{method:'POST',headers:{Origin:'https://portfolio.test','Content-Type':'application/json',Cookie:o},body:JSON.stringify({...payload,headerUpdates:[{slug:'archived',image:'private/new-header.png'}]})}));
+ assert.equal(response.status,200);
+ const after=await s.store.get('content-current');assert.equal(after.cards.length,2);assert.deepEqual(after.cases.archived,{...archived.cases.archived,hero:'private/new-header.png'});
+});

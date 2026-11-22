@@ -114,14 +114,14 @@
     if(!file && !pasted) throw new Error('Wybierz plik lub wklej gotowy pakiet projektu.');
     if(file && file.size>60000000) throw new Error('Wybierz pakiet mniejszy niż 60 MB.');
     const data=await decodeBundle(file?await file.text():pasted);
-    if(!data.img || !data.cards?.length) throw new Error('Pakiet musi zawierać prawdziwe projekty i img.');
+    if(!data.img || (!data.cards?.length && !data.headerUpdates?.length)) throw new Error('Pakiet musi zawierać prawdziwe projekty i img.');
     for(const [key,value] of Object.entries(data.img)) {
       const m=typeof value==='string' && value.match(/^data:image\/(?:png|jpeg|webp);base64,([A-Za-z0-9+/]+=*)$/);
       if(!m) throw new Error('Nieprawidłowy obraz: '+key);
       $('notice').textContent='Wgrywanie obrazu: '+key;
       data.img[key]=(await api('images',{base64:m[1]})).url;
     }
-    await api('content/import',data); $('bundle').value='';$('bundleText').value='';
+    await api(data.headerUpdates?'content/headers':'content/import',data); $('bundle').value='';$('bundleText').value='';
     $('notice').textContent='Projekty wgrane. Sprawdź sekcję All projects przy użyciu aktywnego hasła.';
   });});
   $('refresh').addEventListener('click',()=>run(load));
